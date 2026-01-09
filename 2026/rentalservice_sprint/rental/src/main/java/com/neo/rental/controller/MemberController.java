@@ -15,13 +15,13 @@ public class MemberController {
 
     private final MemberService memberService;
 
-    @GetMapping("/member/save") // localhost:8080/member/save 접속 시 saveForm 메소드 실행
+    @GetMapping("/rental/save") // localhost:8080/member/save 접속 시 saveForm 메소드 실행
     public String saveForm() {
         return "save";
     }
 
     // 회원가입 처리 메서드
-    @PostMapping("/member/save")
+    @PostMapping("/rental/save")
     public String save(@ModelAttribute MemberDTO memberDTO) {
         System.out.println("MemberController.save");
         System.out.println("memberDTO = " + memberDTO);
@@ -29,12 +29,13 @@ public class MemberController {
         return "index"; // 회원가입 후 기본 화면으로 이동
     }
 
-    @GetMapping("/member/login")
+    @GetMapping("/rental/login")
     public String loginForm() {
         return "login"; // templates/login.html 출력
     }
 
-    @PostMapping("/member/login")
+    // 로그인 처리 메서드
+    @PostMapping("/rental/login")
     public String login(@ModelAttribute MemberDTO memberDTO, HttpSession session) {
         MemberDTO loginResult = memberService.login(memberDTO);
 
@@ -50,7 +51,7 @@ public class MemberController {
 
     }
 
-    @GetMapping("/member/logout")
+    @GetMapping("/rental/logout")
     public String logout(HttpSession session) {
         session.invalidate(); // 세션 무효화
         return "logout"; // logout.html 출력

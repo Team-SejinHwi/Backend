@@ -24,7 +24,7 @@ public class SecurityConfig {
         http
                 .csrf((csrf) -> csrf.disable()) // 실습용이라 csrf 보호 비활성화 (나중엔 켜는 게 좋음)
                 .authorizeHttpRequests((auth) -> auth
-                        .requestMatchers("/", "/member/save", "/member/login", "/css/**").permitAll() // 이 주소들은 로그인 없이 접속 허용
+                        .requestMatchers("/", "/rental/save", "/rental/login", "/rental/logout", "/css/**").permitAll() // 이 주소들은 로그인 없이 접속 허용
                         .anyRequest().authenticated() // 나머지 주소는 로그인해야 접속 가능
                 );
 
