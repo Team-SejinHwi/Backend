@@ -1,6 +1,6 @@
 # NeoRental Backend Server
 
-서울 지역 기반 렌탈 서비스 **NeoRental**의 백엔드 서버 저장소입니다.
+지역 기반 렌탈 서비스 **NeoRental**의 백엔드 서버 저장소입니다.
 
 ## 📢 Migration Notice (이전 버전 안내)
 이 저장소는 리팩토링 및 팀 저장소 이관 작업(`Team-SejinHwi`)이 적용된 최신 버전입니다.
@@ -11,7 +11,7 @@
 ---
 
 ## 🛠 Tech Stack
-* **Java 17**
+* **Java 21**
 * **Spring Boot 4.x**
 * **JPA (Hibernate)**
 * **MySQL**
