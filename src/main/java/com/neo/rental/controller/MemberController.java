@@ -2,7 +2,9 @@ package com.neo.rental.controller;
 
 import com.neo.rental.dto.MemberDTO;
 import com.neo.rental.service.MemberService;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -65,7 +67,7 @@ public class MemberController {
 
     // 3. 로그아웃 API (수정됨)
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(HttpServletRequest request) {
+    public ResponseEntity<String> logout(HttpServletRequest request, HttpServletResponse response) {
         // 시큐리티 컨텍스트 비우기
         SecurityContextHolder.clearContext();
 
@@ -74,6 +76,15 @@ public class MemberController {
         if (session != null) {
             session.invalidate();
         }
+
+        // [추가된 부분] 3. 브라우저의 JSESSIONID 쿠키 강제 삭제 요청
+        // "JSESSIONID"라는 이름의 쿠키를 덮어쓰는데, 수명을 0초로 설정해서 즉시 만료시킴
+        Cookie cookie = new Cookie("JSESSIONID", null);
+        cookie.setPath("/");       // 모든 경로에서 삭제
+        cookie.setMaxAge(0);       // 수명을 0으로 설정 (삭제)
+        cookie.setHttpOnly(true);  // 보안 설정 (필수 아님, 기존 설정 따라감)
+
+        response.addCookie(cookie);
         return ResponseEntity.ok("로그아웃 되었습니다.");
     }
 }
