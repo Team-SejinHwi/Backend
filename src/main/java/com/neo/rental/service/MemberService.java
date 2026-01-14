@@ -18,6 +18,11 @@ public class MemberService {
 
     // 회원가입
     public void save(MemberDTO memberDTO) {
+        // [추가됨] 1. 중복 이메일 검증
+        // (Repository에 boolean existsByEmail(String email) 메서드가 필요할 수 있음)
+        if (memberRepository.findByEmail(memberDTO.getEmail()).isPresent()) {
+            throw new IllegalStateException("이미 존재하는 이메일입니다.");
+        }
         // 1. 사용자가 입력한 비밀번호(평문)를 꺼냄
         // (필드명이 password로 바뀌었으므로 getPassword() 사용)
         String originalPassword = memberDTO.getPassword();
