@@ -12,7 +12,7 @@
 
 ## 🛠 Tech Stack
 * **Java 17**
-* **Spring Boot 3.x**
+* **Spring Boot 4.x**
 * **JPA (Hibernate)**
 * **MySQL**
 * **Thymeleaf**
