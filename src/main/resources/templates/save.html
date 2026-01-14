@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NeoRental - 회원가입</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    body {
+        background-color: #b3d9ff; /* 배경색: 하늘색 */
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        width: 100%;
+        max-width: 400px; /* 카드 최대 너비 */
+        padding: 20px;
+    }
+    .card-title {
+        color: #333;
+        font-weight: bold;
+        margin-top: 10px;
+        margin-bottom: 30px;
+    }
+    .icon-box {
+        background-color: #9c27b0; /* 아이콘 배경: 보라색 */
+        color: white;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto; /* 가운데 정렬 */
+        font-size: 24px;
+    }
+    .form-control {
+        border-radius: 5px;
+        height: 45px;
+        margin-bottom: 15px; /* 입력창 간격 */
+    }
+    .btn-primary {
+        width: 100%;
+        height: 45px;
+        font-weight: bold;
+        background-color: #1976d2; /* 버튼 색상: 파란색 */
+        border: none;
+        margin-top: 10px;
+    }
+    .btn-primary:hover {
+        background-color: #1565c0;
+    }
+    .footer-link {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 0.9rem;
+    }
+    .footer-link a {
+        text-decoration: none;
+        color: #1976d2;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="card-body">
+    <div class="icon-box">
+      <i class="fa-solid fa-lock"></i>
+    </div>
+
+    <h3 class="text-center card-title">Sign Up</h3>
+
+    <form action="/rental/save" method="post" onsubmit="return validateForm()">
+
+      <input type="email" class="form-control" name="email" placeholder="Email Address *" required>
+
+      <input type="password" class="form-control" id="password" name="password" placeholder="Password *" required>
+
+      <input type="password" class="form-control" id="confirmPassword" placeholder="Confirm Password *" required>
+
+      <input type="text" class="form-control" name="name" placeholder="Name *" required>
+
+      <input type="text" class="form-control" name="phone" placeholder="Phone Number *" required>
+
+      <input type="text" class="form-control" name="address" placeholder="Address *" required>
+
+      <button type="submit" class="btn btn-primary">SIGN UP</button>
+    </form>
+
+    <div class="footer-link">
+      Already have an account? <a href="/rental/login">Sign in</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  function validateForm() {
+      var password = document.getElementById("password").value;
+      var confirmPassword = document.getElementById("confirmPassword").value;
+
+      if (password !== confirmPassword) {
+          alert("비밀번호가 일치하지 않습니다.");
+          return false; // 전송 중단
+      }
+      return true; // 전송 진행
+  }
+</script>
+
+</body>
+</html>
