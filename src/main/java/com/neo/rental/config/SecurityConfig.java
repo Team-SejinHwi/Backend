@@ -63,13 +63,13 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // [수정] 특정 주소 대신 "패턴"을 사용
-        // 의미: "http://localhost:3000" 도 되고, "https://아무거나.ngrok-free.app" 도 다 허용해라!
+        // 의미: "http://localhost:3000" 도 되고, "https://아무거나.ngrok-free.app"도 모두 허용
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:3000",
                 "http://127.0.0.1:3000",
                 "https://*.ngrok-free.app",  // ★ 핵심: ngrok 주소는 다 통과
                 "https://*.ngrok-free.dev",
-                "https://*.ngrok.io"         // (혹시 옛날 주소 쓸까봐 추가)
+                "https://*.ngrok.io"         // (ngrok 구버전 주소 추가)
         ));
 
         configuration.setAllowedMethods(List.of("*")); // 모든 메서드 허용
