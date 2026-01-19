@@ -24,7 +24,6 @@ public class MemberService {
             throw new IllegalStateException("이미 존재하는 이메일입니다.");
         }
         // 1. 사용자가 입력한 비밀번호(평문)를 꺼냄
-        // (필드명이 password로 바뀌었으므로 getPassword() 사용)
         String originalPassword = memberDTO.getPassword();
 
         // 2. 암호화 진행
