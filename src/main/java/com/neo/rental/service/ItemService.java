@@ -11,6 +11,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.neo.rental.dto.ItemResponseDto; // 추가
+
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -40,5 +45,22 @@ public class ItemService {
         itemRepository.save(item);
 
         return item.getId(); // 저장된 상품 ID 반환
+    }
+
+    // [추가 1] 상품 목록 조회 (최신순)
+    @Transactional(readOnly = true) // 읽기 전용 모드 (성능 최적화)
+    public List<ItemResponseDto> getItemList() {
+        return itemRepository.findAllByOrderByCreatedAtDesc().stream()
+                .map(ItemResponseDto::new) // Entity를 DTO로 변환
+                .collect(Collectors.toList());
+    }
+
+    // [추가 2] 상품 상세 조회
+    @Transactional(readOnly = true)
+    public ItemResponseDto getItemDetail(Long itemId) {
+        ItemEntity item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new EntityNotFoundException("해당 상품이 존재하지 않습니다. id=" + itemId));
+
+        return new ItemResponseDto(item);
     }
 }

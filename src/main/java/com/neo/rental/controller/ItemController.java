@@ -1,5 +1,6 @@
 package com.neo.rental.controller;
 
+import com.neo.rental.dto.ItemResponseDto; // 추가
 import com.neo.rental.dto.ItemFormDto;
 import com.neo.rental.service.ItemService;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/items")
@@ -32,5 +34,18 @@ public class ItemController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("등록 실패: " + e.getMessage());
         }
+    }
+    // [추가 1] 상품 목록 조회
+    @GetMapping
+    public ResponseEntity<List<ItemResponseDto>> getItemList() {
+        List<ItemResponseDto> items = itemService.getItemList();
+        return ResponseEntity.ok(items);
+    }
+
+    // [추가 2] 상품 상세 조회
+    @GetMapping("/{itemId}")
+    public ResponseEntity<ItemResponseDto> getItemDetail(@PathVariable Long itemId) {
+        ItemResponseDto item = itemService.getItemDetail(itemId);
+        return ResponseEntity.ok(item);
     }
 }
