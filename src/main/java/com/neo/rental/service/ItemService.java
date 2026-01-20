@@ -47,7 +47,7 @@ public class ItemService {
         return item.getId(); // 저장된 상품 ID 반환
     }
 
-    // [추가 1] 상품 목록 조회 (최신순)
+    // 상품 목록 조회 (최신순)
     @Transactional(readOnly = true) // 읽기 전용 모드 (성능 최적화)
     public List<ItemResponseDto> getItemList() {
         return itemRepository.findAllByOrderByCreatedAtDesc().stream()
@@ -55,12 +55,43 @@ public class ItemService {
                 .collect(Collectors.toList());
     }
 
-    // [추가 2] 상품 상세 조회
+    // 상품 상세 조회
     @Transactional(readOnly = true)
     public ItemResponseDto getItemDetail(Long itemId) {
         ItemEntity item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new EntityNotFoundException("해당 상품이 존재하지 않습니다. id=" + itemId));
 
         return new ItemResponseDto(item);
+    }
+
+    // [수정]
+    public Long updateItem(Long itemId, ItemFormDto itemFormDto, String email) {
+        // 1. 상품 조회
+        ItemEntity item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new EntityNotFoundException("상품이 없습니다."));
+
+        // 2. 주인 확인
+        if (!item.getMember().getEmail().equals(email)) {
+            throw new IllegalArgumentException("수정 권한이 없습니다. (본인 물건만 수정 가능)");
+        }
+
+        // 3. 수정 진행
+        item.updateItem(itemFormDto.getTitle(), itemFormDto.getContent(), itemFormDto.getPrice(), itemFormDto.getLocation(), itemFormDto.getItemImageUrl());
+
+        return item.getId();
+    }
+
+    // [삭제]
+    public void deleteItem(Long itemId, String email) {
+        ItemEntity item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new EntityNotFoundException("상품이 없습니다."));
+
+        // 주인 확인
+        if (!item.getMember().getEmail().equals(email)) {
+            throw new IllegalArgumentException("삭제 권한이 없습니다.");
+        }
+
+        // 삭제 진행
+        itemRepository.delete(item);
     }
 }

@@ -40,14 +40,15 @@ public class SecurityConfig {
 
                 // 3. HTTP 요청 권한 설정
                 .authorizeHttpRequests((auth) -> auth
-                        // [중요] Next.js에서 접근하는 로그인, 회원가입, 로그아웃 API 허용
-                        .requestMatchers("/", "/api/auth/**").permitAll()
-
-                        // 정적 리소스 허용 (필요 시 유지)
-                        .requestMatchers("/css/**", "/images/**", "/js/**", "/favicon.ico").permitAll()
-
-                        // 그 외 모든 요청은 인증 필요
-                        .anyRequest().authenticated()
+                                // [중요] Next.js에서 접근하는 로그인, 회원가입, 로그아웃 API 허용
+//                        .requestMatchers("/", "/api/auth/**", "api/items/**").permitAll()
+//
+//                        // 정적 리소스 허용 (필요 시 유지)
+//                        .requestMatchers("/css/**", "/images/**", "/js/**", "/favicon.ico").permitAll()
+//
+//                        // 그 외 모든 요청은 인증 필요
+//                        .anyRequest().authenticated()
+                                .anyRequest().permitAll()
                 );
 
         // [삭제된 부분 설명]

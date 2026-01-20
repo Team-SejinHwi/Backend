@@ -55,4 +55,14 @@ public class ItemEntity {
 
     @UpdateTimestamp
     private LocalDateTime modifiedAt;
+
+    // 상품 정보 수정 메소드
+    public void updateItem(String title, String content, Integer price, String location, String itemImageUrl) {
+        this.title = title;
+        this.content = content;
+        this.price = price;
+        this.location = location;
+        this.itemImageUrl = itemImageUrl;
+        // 필요하다면 status나 날짜 등도 여기서 변경
+    }
 }
