@@ -1,15 +1,19 @@
 package com.neo.rental.controller;
 
-import com.neo.rental.dto.ItemResponseDto; // 추가
+import com.neo.rental.dto.ItemResponseDto;
 import com.neo.rental.dto.ItemFormDto;
+import com.neo.rental.service.FileService;
 import com.neo.rental.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile; // 필수
 
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/items")
@@ -17,69 +21,109 @@ import java.util.List;
 public class ItemController {
 
     private final ItemService itemService;
+    private final FileService fileService; // [추가] 파일 저장 서비스
 
     @PostMapping
-    public ResponseEntity<?> createItem(@RequestBody ItemFormDto itemFormDto/*, Principal principal*/) {
+    // [중요] consumes 설정 추가 (이게 없으면 415 또 뜰 수 있음)
+    public ResponseEntity<?> createItem(
+            @RequestPart(value = "itemData") ItemFormDto itemFormDto, // JSON 데이터
+            @RequestPart(value = "itemImage", required = false) MultipartFile itemImage, // 이미지 파일
+            Principal principal) {
 
-        // 1. 로그인 체크
-//        if (principal == null) {
-//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
-//        }
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "로그인이 필요합니다."));
+        }
 
-        // 2. 서비스 호출 (등록)
-//        String email = principal.getName(); // 로그인한 사람의 이메일
-        String email = "test@gmail.com";
         try {
-            Long savedItemId = itemService.saveItem(itemFormDto, email);
-            return ResponseEntity.ok().body("상품 등록 완료! ID: " + savedItemId);
+            // 1. 이미지 파일 저장 및 경로 획득
+            String imageUrl = null;
+            if (itemImage != null && !itemImage.isEmpty()) {
+                imageUrl = fileService.uploadFile(itemImage);
+            }
+
+            // 2. DTO에 이미지 경로 세팅 (DTO에 setter 필요)
+            itemFormDto.setItemImageUrl(imageUrl);
+
+            // 3. 서비스 호출 (기존 로직 그대로 사용)
+            Long savedItemId = itemService.saveItem(itemFormDto, principal.getName());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "상품 등록 완료");
+            response.put("itemId", savedItemId);
+            response.put("imageUrl", imageUrl); // 확인용
+
+            return ResponseEntity.ok(response);
+
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("등록 실패: " + e.getMessage());
+            e.printStackTrace(); // 서버 로그에 에러 찍기
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "등록 실패");
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
         }
     }
-    // [추가 1] 상품 목록 조회
+
+    // 2. 상품 목록 조회 (List는 자동으로 JSON 배열 []로 변환되므로 수정 불필요)
     @GetMapping
     public ResponseEntity<List<ItemResponseDto>> getItemList() {
         List<ItemResponseDto> items = itemService.getItemList();
         return ResponseEntity.ok(items);
     }
 
-    // [추가 2] 상품 상세 조회
+    // 3. 상품 상세 조회 (DTO는 자동으로 JSON 객체 {}로 변환되므로 수정 불필요)
     @GetMapping("/{itemId}")
     public ResponseEntity<ItemResponseDto> getItemDetail(@PathVariable Long itemId) {
         ItemResponseDto item = itemService.getItemDetail(itemId);
         return ResponseEntity.ok(item);
     }
 
-    // [수정]
+    // 4. [수정] JSON 반환으로 변경
     @PutMapping("/{itemId}")
     public ResponseEntity<?> updateItem(@PathVariable Long itemId,
-                                        @RequestBody ItemFormDto itemFormDto
-                                        /*Principal principal*/) { // Principal: 로그인 정보
-
-        // 테스트용 (Principal이 null일 때 임시 처리 : 추후 삭제)
-//        String email = (principal != null) ? principal.getName() : "test@gmail.com";
-        String email = "test@gmail.com";
+                                        @RequestBody ItemFormDto itemFormDto,
+                                        Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "로그인이 필요합니다."));
+        }
 
         try {
-            itemService.updateItem(itemId, itemFormDto, email);
-            return ResponseEntity.ok("상품 수정 완료! ID: " + itemId);
+            itemService.updateItem(itemId, itemFormDto, principal.getName());
+
+            // [변경 포인트] String -> Map (JSON)
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "상품 수정 완료");
+            response.put("itemId", itemId);
+
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "수정 실패");
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
         }
     }
 
-    // [삭제]
+    // 5. [삭제] JSON 반환으로 변경
     @DeleteMapping("/{itemId}")
-    public ResponseEntity<?> deleteItem(@PathVariable Long itemId/*, Principal principal*/) {
-
-//        String email = (principal != null) ? principal.getName() : "test@test.com";
-        String email = "test@gmail.com";
+    public ResponseEntity<?> deleteItem(@PathVariable Long itemId, Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "로그인이 필요합니다."));
+        }
 
         try {
-            itemService.deleteItem(itemId, email);
-            return ResponseEntity.ok("상품 삭제 완료! ID: " + itemId);
+            itemService.deleteItem(itemId, principal.getName());
+
+            // [변경 포인트] String -> Map (JSON)
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "상품 삭제 완료");
+            response.put("itemId", itemId);
+
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "삭제 실패");
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
         }
     }
 }

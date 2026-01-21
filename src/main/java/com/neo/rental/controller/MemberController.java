@@ -1,6 +1,8 @@
 package com.neo.rental.controller;
 
 import com.neo.rental.dto.MemberDTO;
+import com.neo.rental.dto.PasswordUpdateDto;
+import com.neo.rental.dto.MemberUpdateDto;
 import com.neo.rental.service.MemberService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import org.springframework.security.core.Authentication;
 
+import java.security.Principal;
 import java.util.Collections;
 
 @RestController
@@ -87,5 +90,50 @@ public class MemberController {
 
         response.addCookie(cookie);
         return ResponseEntity.ok("로그아웃 되었습니다.");
+    }
+
+    // 4. 내 정보 조회
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyInfo(Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+
+        // principal.getName()에는 로그인할 때 넣은 'email'이 들어있습니다.
+        MemberDTO myInfo = memberService.getMyInfo(principal.getName());
+        return ResponseEntity.ok(myInfo);
+    }
+
+    // 5. 내 정보 수정 (이름, 주소, 전화번호)
+    @PutMapping("/me")
+    public ResponseEntity<?> updateMyInfo(@RequestBody MemberUpdateDto updateDto, Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+
+        try {
+            memberService.updateMemberInfo(principal.getName(), updateDto);
+            return ResponseEntity.ok("회원 정보 수정 완료");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // 6. 비밀번호 변경
+    @PatchMapping("/password")
+    public ResponseEntity<?> updatePassword(@RequestBody PasswordUpdateDto passDto, Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+
+        try {
+            memberService.updatePassword(principal.getName(), passDto);
+            return ResponseEntity.ok("비밀번호 변경 완료");
+        } catch (IllegalArgumentException e) {
+            // 비밀번호 불일치 등 명확한 에러 메시지 반환
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("비밀번호 변경 실패");
+        }
     }
 }

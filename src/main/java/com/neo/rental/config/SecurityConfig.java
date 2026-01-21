@@ -41,19 +41,15 @@ public class SecurityConfig {
                 // 3. HTTP 요청 권한 설정
                 .authorizeHttpRequests((auth) -> auth
                                 // [중요] Next.js에서 접근하는 로그인, 회원가입, 로그아웃 API 허용
-//                        .requestMatchers("/", "/api/auth/**", "api/items/**").permitAll()
-//
-//                        // 정적 리소스 허용 (필요 시 유지)
-//                        .requestMatchers("/css/**", "/images/**", "/js/**", "/favicon.ico").permitAll()
-//
-//                        // 그 외 모든 요청은 인증 필요
-//                        .anyRequest().authenticated()
-                                .anyRequest().permitAll()
-                );
+                        .requestMatchers("/", "/api/auth/**" ,"/api/items/**", "/images/**").permitAll()
+                                                                    // 임시 허용
+                        // 정적 리소스 허용 (필요 시 유지)
+                        .requestMatchers("/css/**", "/images/**", "/js/**", "/favicon.ico").permitAll()
 
-        // [삭제된 부분 설명]
-        // formLogin(): Next.js가 화면을 담당하므로, 스프링이 로그인 페이지로 리다이렉트하는 설정 제거
-        // logout(): MemberController에서 로그아웃 API를 직접 구현했으므로 제거
+                        // 그 외 모든 요청은 인증 필요
+                        .anyRequest().authenticated()
+//                                .anyRequest().permitAll()
+                );
 
         return http.build();
     }
@@ -63,12 +59,11 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // [수정] 특정 주소 대신 "패턴"을 사용
-        // 의미: "http://localhost:3000" 도 되고, "https://아무거나.ngrok-free.app"도 모두 허용
+        // [수정] 특정 주소 대신 패턴 사용
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:3000",
                 "http://127.0.0.1:3000",
-                "https://*.ngrok-free.app",  // ★ 핵심: ngrok 주소는 다 통과
+                "https://*.ngrok-free.app",  // ★ 핵심: ngrok 주소 허용
                 "https://*.ngrok-free.dev",
                 "https://*.ngrok.io"         // (ngrok 구버전 주소 추가)
         ));

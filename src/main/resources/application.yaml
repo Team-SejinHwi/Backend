@@ -1,4 +1,8 @@
 spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB      # 파일 하나 최대 크기
+      max-request-size: 10MB   # 요청 전체 최대 크기
   application:
     name: rental
 
@@ -23,3 +27,7 @@ server:
   servlet:
     session:
       timeout: 60m  # 세션 초기화 시간을 60분으로 설정 (m:분, s:초, h:시간)
+
+file:
+  upload-dir: /Users/oppenheimer/2026/rentalservice_sprint/rental-images/
+#  C:/rental-images/ # 윈도우 기준

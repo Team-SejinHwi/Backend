@@ -1,64 +1,87 @@
 package com.neo.rental.service;
 
 import com.neo.rental.dto.MemberDTO;
+import com.neo.rental.dto.MemberUpdateDto;
+import com.neo.rental.dto.PasswordUpdateDto;
 import com.neo.rental.entity.MemberEntity;
 import com.neo.rental.repository.MemberRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; // [중요] 트랜잭션 처리를 위해 추가
 
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true) // [Tip] 기본적으로 읽기 전용으로 설정하여 성능 최적화
 public class MemberService {
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
 
-    // 회원가입
+    // 1. 회원가입
+    @Transactional // [필수] 데이터 저장이 일어나므로 쓰기 트랜잭션 허용
     public void save(MemberDTO memberDTO) {
-        // [추가됨] 1. 중복 이메일 검증
-        // (Repository에 boolean existsByEmail(String email) 메서드가 필요할 수 있음)
+        // 중복 이메일 검증
         if (memberRepository.findByEmail(memberDTO.getEmail()).isPresent()) {
             throw new IllegalStateException("이미 존재하는 이메일입니다.");
         }
-        // 1. 사용자가 입력한 비밀번호(평문)를 꺼냄
-        String originalPassword = memberDTO.getPassword();
 
-        // 2. 암호화 진행
-        String encodedPassword = passwordEncoder.encode(originalPassword);
-
-        // 3. DTO에 암호화된 비밀번호를 다시 세팅
+        // 비밀번호 암호화
+        String encodedPassword = passwordEncoder.encode(memberDTO.getPassword());
         memberDTO.setPassword(encodedPassword);
 
-        // 4. 변환 및 저장 (DTO -> Entity)
-        // Entity의 toMemberEntity 메서드 내부도 수정되어 있어야 합니다.
+        // 변환 및 저장
         MemberEntity memberEntity = MemberEntity.toMemberEntity(memberDTO);
         memberRepository.save(memberEntity);
     }
 
-    // 로그인
+    // 2. 로그인 (읽기 전용이므로 @Transactional 생략 가능 - 클래스 레벨 적용됨)
     public MemberDTO login(MemberDTO memberDTO) {
-        // 1. 이메일로 회원 조회
-        // Entity 필드명이 email로 바뀌었으므로, Repository 메서드도 수정
         Optional<MemberEntity> byEmail = memberRepository.findByEmail(memberDTO.getEmail());
 
         if (byEmail.isPresent()) {
             MemberEntity memberEntity = byEmail.get();
-
-            // 2. 비밀번호 비교 (입력받은 비번, DB 암호화 비번)
+            // 비밀번호 비교
             if (passwordEncoder.matches(memberDTO.getPassword(), memberEntity.getPassword())) {
-                // 비밀번호 일치 -> DTO 변환 후 리턴
-                // DTO의 toMemberDTO 메서드 내부에서 비밀번호는 null 처리했으므로 안전
                 return MemberDTO.toMemberDTO(memberEntity);
-            } else {
-                // 비밀번호 불일치
-                return null;
             }
-        } else {
-            // 조회 결과 없음 (해당 이메일을 가진 회원이 없음)
-            return null;
         }
+        return null; // 로그인 실패
+    }
+
+    // [추가] 3. 내 정보 조회 (Controller에서 호출함)
+    public MemberDTO getMyInfo(String email) {
+        MemberEntity member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("회원 정보가 없습니다."));
+        return MemberDTO.toMemberDTO(member);
+    }
+
+    // 4. 내 정보 수정
+    @Transactional // [필수] 이게 있어야 update 쿼리가 날아갑니다 (Dirty Checking)
+    public void updateMemberInfo(String email, MemberUpdateDto updateDto) {
+        MemberEntity member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("회원 정보가 없습니다."));
+
+        // Entity 내부의 값만 변경하면, 트랜잭션이 끝날 때 자동으로 DB 업데이트됨
+        member.updateMember(updateDto.getName(), updateDto.getPhone(), updateDto.getAddress());
+    }
+
+    // 5. 비밀번호 변경
+    @Transactional // [필수]
+    public void updatePassword(String email, PasswordUpdateDto passDto) {
+        MemberEntity member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("회원 정보가 없습니다."));
+
+        // 현재 비밀번호 검증
+        if (!passwordEncoder.matches(passDto.getCurrentPassword(), member.getPassword())) {
+            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+        }
+
+        // 새 비밀번호 암호화 및 변경
+        String encodedNewPassword = passwordEncoder.encode(passDto.getNewPassword());
+        member.updatePassword(encodedNewPassword);
     }
 }

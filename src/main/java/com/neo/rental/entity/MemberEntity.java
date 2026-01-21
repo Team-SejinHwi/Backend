@@ -60,4 +60,15 @@ public class MemberEntity {
 
         return memberEntity;
     }
+    // 정보 수정 메소드
+    public void updateMember(String name, String phone, String address) {
+        this.name = name;
+        this.phone = phone;
+        this.address = address;
+    }
+
+    // 비밀번호 변경 메소드
+    public void updatePassword(String newPassword) {
+        this.password = newPassword;
+    }
 }
