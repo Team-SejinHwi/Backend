@@ -32,12 +32,20 @@ public class RentalEntity {
     @JoinColumn(name = "renter_id", nullable = false)
     private MemberEntity renter;
 
+    // ★ 추가됨: 총 대여 금액 (DB 1.3)
+    @Column(name = "total_price")
+    private int totalPrice;
+
     // 상태 (기본값 필요 시 Builder에서 처리)
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RentalStatus status;
 
-    // 날짜 정보는 필수
+    // * 거절 사유 추가 (DB 1.3)
+    @Column(name = "reject_reason")
+    private String rejectReason;
+
+    // 날짜 정보 필수
     @Column(nullable = false)
     private LocalDateTime startDate;
 
