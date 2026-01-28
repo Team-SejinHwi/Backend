@@ -77,25 +77,46 @@ public class ItemController {
         return ResponseEntity.ok(item);
     }
 
-    // 4. [수정] JSON 반환으로 변경
+    // 4. [수정] 파일 업로드 가능하도록 변경 (multipart/form-data 지원)
     @PutMapping("/{itemId}")
     public ResponseEntity<?> updateItem(@PathVariable Long itemId,
-                                        @RequestBody ItemFormDto itemFormDto,
+                                        // [변경 1] @RequestBody -> @RequestPart (JSON + 파일 받기 위함)
+                                        @RequestPart(value = "itemData") ItemFormDto itemFormDto,
+                                        // [변경 2] 이미지 파일도 받을 수 있게 추가 (필수는 아님)
+                                        @RequestPart(value = "itemImage", required = false) MultipartFile itemImage,
                                         Principal principal) {
+
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "로그인이 필요합니다."));
         }
 
         try {
+            // [추가 로직] 새 이미지가 들어왔는지 확인
+            String imageUrl = null;
+            if (itemImage != null && !itemImage.isEmpty()) {
+                // 새 파일이 있으면 업로드하고 URL 받기
+                imageUrl = fileService.uploadFile(itemImage);
+                // DTO에 새 이미지 경로 세팅
+                itemFormDto.setItemImageUrl(imageUrl);
+            }
+            // 주의: 이미지가 null이면 서비스단에서 기존 이미지를 유지하도록 로직이 되어 있어야 함
+            // 혹은 프론트에서 기존 이미지 URL을 itemData에 담아서 보내줘야 함
+
+            // 서비스 호출
             itemService.updateItem(itemId, itemFormDto, principal.getName());
 
-            // [변경 포인트] String -> Map (JSON)
             Map<String, Object> response = new HashMap<>();
             response.put("message", "상품 수정 완료");
             response.put("itemId", itemId);
+            // 디버깅용으로 이미지 URL도 같이 내려주면 좋음
+            if (imageUrl != null) {
+                response.put("newImageUrl", imageUrl);
+            }
 
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
+            e.printStackTrace(); // 에러 로그 출력
             Map<String, String> error = new HashMap<>();
             error.put("message", "수정 실패");
             error.put("error", e.getMessage());
