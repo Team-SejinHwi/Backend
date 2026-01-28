@@ -23,14 +23,14 @@ import java.security.Principal;
 import java.util.Collections;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class MemberController {
 
     private final MemberService memberService;
 
     // 1. 회원가입 API (그대로 유지)
-    @PostMapping("/signup")
+    @PostMapping("/auth/signup")
     public ResponseEntity<String> signup(@RequestBody MemberDTO memberDTO) {
         try {
             memberService.save(memberDTO);
@@ -41,7 +41,7 @@ public class MemberController {
     }
 
     // 2. 로그인 API (수정됨)
-    @PostMapping("/login")
+    @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody MemberDTO memberDTO, HttpServletRequest request) {
         // A. 서비스에서 ID/PW 검증 (비밀번호 일치 여부 확인 필수!)
         MemberDTO loginResult = memberService.login(memberDTO);
@@ -70,7 +70,7 @@ public class MemberController {
     }
 
     // 3. 로그아웃 API (수정됨)
-    @PostMapping("/logout")
+    @PostMapping("/auth/logout")
     public ResponseEntity<String> logout(HttpServletRequest request, HttpServletResponse response) {
         // 시큐리티 컨텍스트 비우기
         SecurityContextHolder.clearContext();
@@ -93,7 +93,7 @@ public class MemberController {
     }
 
     // 4. 내 정보 조회
-    @GetMapping("/me")
+    @GetMapping("/members/me")
     public ResponseEntity<?> getMyInfo(Principal principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
@@ -105,7 +105,7 @@ public class MemberController {
     }
 
     // 5. 내 정보 수정 (이름, 주소, 전화번호)
-    @PutMapping("/me")
+    @PutMapping("/members/me")
     public ResponseEntity<?> updateMyInfo(@RequestBody MemberUpdateDto updateDto, Principal principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
@@ -120,7 +120,7 @@ public class MemberController {
     }
 
     // 6. 비밀번호 변경
-    @PatchMapping("/password")
+    @PatchMapping("/members/password")
     public ResponseEntity<?> updatePassword(@RequestBody PasswordUpdateDto passDto, Principal principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
