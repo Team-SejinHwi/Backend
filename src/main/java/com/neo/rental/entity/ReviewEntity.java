@@ -40,4 +40,13 @@ public class ReviewEntity {
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    // ReviewEntity.java 안에 추가하세요
+
+    // [수정 메서드]
+    public void updateReview(Integer rating, String content) {
+        this.rating = rating;
+        this.content = content;
+        // this.modifiedAt = LocalDateTime.now(); // BaseEntity 쓴다면 자동 처리됨
+    }
 }
