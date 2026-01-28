@@ -17,9 +17,9 @@ import org.springframework.stereotype.Component;
 import java.security.Key;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.stream.Collectors;
-import java.util.Collections; // 추가됨
 
 @Slf4j
 @Component
@@ -32,15 +32,17 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    // 1. 토큰 생성
+    // 1. 토큰 생성 (Access Token + Refresh Token)
     public TokenInfo generateToken(Authentication authentication) {
+        // 권한 가져오기
         String authorities = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
         long now = (new Date()).getTime();
-        Date accessTokenExpiresIn = new Date(now + 86400000); // 1일
 
+        // 1) Access Token 생성 (유효기간: 1일)
+        Date accessTokenExpiresIn = new Date(now + 86400000);
         String accessToken = Jwts.builder()
                 .setSubject(authentication.getName())
                 .claim("auth", authorities)
@@ -48,9 +50,19 @@ public class JwtTokenProvider {
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
 
+        // 2) [추가] Refresh Token 생성 (유효기간: 7일)
+        // Refresh Token은 보통 권한 정보 없이 만료 시간만 설정하거나, 필요한 최소 정보만 담습니다.
+        Date refreshTokenExpiresIn = new Date(now + 604800000);
+        String refreshToken = Jwts.builder()
+                .setExpiration(refreshTokenExpiresIn)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+
+        // 3) TokenInfo에 담아 반환
         return TokenInfo.builder()
                 .grantType("Bearer")
                 .accessToken(accessToken)
+                .refreshToken(refreshToken) // [필수] TokenInfo DTO에 필드가 추가되어 있어야 함
                 .build();
     }
 

@@ -27,9 +27,7 @@ public class MemberEntity {
     // memberPassword -> password 로 변경
     @Column(nullable = false)
     private String password;
-
-    // --- 새로 추가된 필드들 ---
-
+    
     @Column(nullable = false)
     private String name;
 
@@ -48,6 +46,15 @@ public class MemberEntity {
     @LastModifiedDate
     private LocalDateTime modifiedAt;
 
+    // [추가] 리프레시 토큰 저장용 필드
+    @Column(length = 1000) // 토큰 길이가 길 수 있으므로 넉넉하게
+    private String refreshToken;
+
+    // [추가] 리프레시 토큰 업데이트 메서드
+    public void updateRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
     // DTO -> Entity 변환 메서드
     public static MemberEntity toMemberEntity(MemberDTO memberDTO) {
         MemberEntity memberEntity = new MemberEntity();
@@ -60,6 +67,7 @@ public class MemberEntity {
 
         return memberEntity;
     }
+
     // 정보 수정 메소드
     public void updateMember(String name, String phone, String address) {
         this.name = name;

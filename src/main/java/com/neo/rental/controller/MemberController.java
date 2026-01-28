@@ -3,7 +3,8 @@ package com.neo.rental.controller;
 import com.neo.rental.dto.MemberDTO;
 import com.neo.rental.dto.MemberUpdateDto;
 import com.neo.rental.dto.PasswordUpdateDto;
-import com.neo.rental.dto.TokenInfo; // [필수] TokenInfo 임포트 확인!
+import com.neo.rental.dto.RefreshTokenRequestDto; // [필수] 임포트 확인
+import com.neo.rental.dto.TokenInfo;
 import com.neo.rental.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestController
@@ -31,12 +34,11 @@ public class MemberController {
         }
     }
 
-    // 2. 로그인 API (JWT 버전으로 수정)
+    // 2. 로그인 API
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody MemberDTO memberDTO) {
-        // [수정] 서비스의 login 메서드 시그니처에 맞게 호출 (DTO 통째로 x, 이메일/비번 분리 o)
-        // [수정] 리턴 타입도 MemberDTO가 아니라 TokenInfo
         try {
+            // 이메일과 비밀번호로 로그인 시도 -> Access + Refresh Token 반환
             TokenInfo tokenInfo = memberService.login(memberDTO.getEmail(), memberDTO.getPassword());
             return ResponseEntity.ok(tokenInfo);
         } catch (Exception e) {
@@ -45,15 +47,37 @@ public class MemberController {
         }
     }
 
-    // 3. 로그아웃 API (JWT는 서버 세션이 없으므로 클라이언트가 토큰을 버리면 끝)
+    // 3. 로그아웃 API
     @PostMapping("/auth/logout")
     public ResponseEntity<String> logout() {
-        // 프론트엔드에서 localStorage의 토큰을 삭제하면 로그아웃입니다.
-        // 서버에서는 딱히 할 일이 없지만, 응답을 위해 남겨둡니다.
         return ResponseEntity.ok("로그아웃 되었습니다.");
     }
 
-    // 4. 내 정보 조회
+    // [신규] 4. 토큰 갱신 API (Refresh Token)
+    @PostMapping("/auth/refresh")
+    public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequestDto requestDto) {
+        try {
+            // 서비스에서 리프레시 토큰 검증 후 새 엑세스 토큰 발급
+            String newAccessToken = memberService.refreshAccessToken(requestDto.getRefreshToken());
+
+            // 응답 포맷 생성 ({ success: true, data: { accessToken: ... } })
+            Map<String, Object> data = new HashMap<>();
+            data.put("accessToken", newAccessToken);
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("success", true);
+            response.put("data", data);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            // 리프레시 토큰이 만료되었거나 유효하지 않은 경우
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "토큰 갱신 실패: " + e.getMessage()));
+        }
+    }
+
+    // 5. 내 정보 조회
     @GetMapping("/members/me")
     public ResponseEntity<?> getMyInfo(Principal principal) {
         if (principal == null) {
@@ -63,7 +87,7 @@ public class MemberController {
         return ResponseEntity.ok(myInfo);
     }
 
-    // 5. 내 정보 수정
+    // 6. 내 정보 수정
     @PutMapping("/members/me")
     public ResponseEntity<?> updateMyInfo(@RequestBody MemberUpdateDto updateDto, Principal principal) {
         if (principal == null) {
@@ -77,7 +101,7 @@ public class MemberController {
         }
     }
 
-    // 6. 비밀번호 변경
+    // 7. 비밀번호 변경
     @PatchMapping("/members/password")
     public ResponseEntity<?> updatePassword(@RequestBody PasswordUpdateDto passDto, Principal principal) {
         if (principal == null) {
