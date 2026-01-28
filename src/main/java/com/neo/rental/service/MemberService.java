@@ -3,10 +3,15 @@ package com.neo.rental.service;
 import com.neo.rental.dto.MemberDTO;
 import com.neo.rental.dto.MemberUpdateDto;
 import com.neo.rental.dto.PasswordUpdateDto;
+import com.neo.rental.dto.TokenInfo;
 import com.neo.rental.entity.MemberEntity;
+import com.neo.rental.jwt.JwtTokenProvider;
 import com.neo.rental.repository.MemberRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // [중요] 트랜잭션 처리를 위해 추가
@@ -20,6 +25,10 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
+
+    // jwt 방식을 위한 추가
+    private final AuthenticationManagerBuilder authenticationManagerBuilder;
+    private final JwtTokenProvider jwtTokenProvider;
 
     // 1. 회원가입
     @Transactional // [필수] 데이터 저장이 일어나므로 쓰기 트랜잭션 허용
@@ -38,18 +47,18 @@ public class MemberService {
         memberRepository.save(memberEntity);
     }
 
-    // 2. 로그인 (읽기 전용이므로 @Transactional 생략 가능 - 클래스 레벨 적용됨)
-    public MemberDTO login(MemberDTO memberDTO) {
-        Optional<MemberEntity> byEmail = memberRepository.findByEmail(memberDTO.getEmail());
+    // 2. 로그인 메서드를 이렇게 바꾸세요
+    public TokenInfo login(String email, String password) {
+        // 1. ID/PW를 감싼 토큰 생성 (아직 인증 전)
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(email, password);
 
-        if (byEmail.isPresent()) {
-            MemberEntity memberEntity = byEmail.get();
-            // 비밀번호 비교
-            if (passwordEncoder.matches(memberDTO.getPassword(), memberEntity.getPassword())) {
-                return MemberDTO.toMemberDTO(memberEntity);
-            }
-        }
-        return null; // 로그인 실패
+        // 2. 실제 검증!
+        // 여기서 자동으로 security 패키지의 CustomUserDetailsService가 실행됩니다.
+        // 비밀번호가 틀리면 여기서 예외가 터집니다.
+        Authentication authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
+
+        // 3. 인증 성공하면 JWT 토큰 생성해서 반환
+        return jwtTokenProvider.generateToken(authentication);
     }
 
     // [추가] 3. 내 정보 조회 (Controller에서 호출함)

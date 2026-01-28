@@ -1,26 +1,17 @@
 package com.neo.rental.controller;
 
 import com.neo.rental.dto.MemberDTO;
-import com.neo.rental.dto.PasswordUpdateDto;
 import com.neo.rental.dto.MemberUpdateDto;
+import com.neo.rental.dto.PasswordUpdateDto;
+import com.neo.rental.dto.TokenInfo; // [필수] TokenInfo 임포트 확인!
 import com.neo.rental.service.MemberService;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
 
-import org.springframework.security.core.Authentication;
-
 import java.security.Principal;
-import java.util.Collections;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -29,7 +20,7 @@ public class MemberController {
 
     private final MemberService memberService;
 
-    // 1. 회원가입 API (그대로 유지)
+    // 1. 회원가입 API
     @PostMapping("/auth/signup")
     public ResponseEntity<String> signup(@RequestBody MemberDTO memberDTO) {
         try {
@@ -40,55 +31,25 @@ public class MemberController {
         }
     }
 
-    // 2. 로그인 API (수정됨)
+    // 2. 로그인 API (JWT 버전으로 수정)
     @PostMapping("/auth/login")
-    public ResponseEntity<?> login(@RequestBody MemberDTO memberDTO, HttpServletRequest request) {
-        // A. 서비스에서 ID/PW 검증 (비밀번호 일치 여부 확인 필수!)
-        MemberDTO loginResult = memberService.login(memberDTO);
-
-        if (loginResult != null) {
-            // [핵심 변경 사항] Spring Security에게 인증 정보 주입
-
-            // 1. 인증 토큰 생성 (권한이 있다면 리스트에 추가, 여기선 빈 리스트)
-            // 실제로는 new SimpleGrantedAuthority("ROLE_USER") 등을 넣어야 함
-            UsernamePasswordAuthenticationToken authToken =
-                    new UsernamePasswordAuthenticationToken(loginResult.getEmail(), null, Collections.emptyList());
-
-            // 2. 시큐리티 컨텍스트 생성 및 토큰 설정
-            SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-            securityContext.setAuthentication(authToken);
-            SecurityContextHolder.setContext(securityContext);
-
-            // 3. [중요] 세션에 시큐리티 컨텍스트 저장 (이게 없으면 다음 요청 때 로그인 풀림)
-            HttpSession session = request.getSession(true);
-            session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext);
-
-            return ResponseEntity.ok(loginResult);
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("이메일 또는 비밀번호 불일치");
+    public ResponseEntity<?> login(@RequestBody MemberDTO memberDTO) {
+        // [수정] 서비스의 login 메서드 시그니처에 맞게 호출 (DTO 통째로 x, 이메일/비번 분리 o)
+        // [수정] 리턴 타입도 MemberDTO가 아니라 TokenInfo
+        try {
+            TokenInfo tokenInfo = memberService.login(memberDTO.getEmail(), memberDTO.getPassword());
+            return ResponseEntity.ok(tokenInfo);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인 실패: " + e.getMessage());
         }
     }
 
-    // 3. 로그아웃 API (수정됨)
+    // 3. 로그아웃 API (JWT는 서버 세션이 없으므로 클라이언트가 토큰을 버리면 끝)
     @PostMapping("/auth/logout")
-    public ResponseEntity<String> logout(HttpServletRequest request, HttpServletResponse response) {
-        // 시큐리티 컨텍스트 비우기
-        SecurityContextHolder.clearContext();
-
-        // 세션 삭제
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.invalidate();
-        }
-
-        // [추가된 부분] 3. 브라우저의 JSESSIONID 쿠키 강제 삭제 요청
-        // "JSESSIONID"라는 이름의 쿠키를 덮어쓰는데, 수명을 0초로 설정해서 즉시 만료시킴
-        Cookie cookie = new Cookie("JSESSIONID", null);
-        cookie.setPath("/");       // 모든 경로에서 삭제
-        cookie.setMaxAge(0);       // 수명을 0으로 설정 (삭제)
-        cookie.setHttpOnly(true);  // 보안 설정 (필수 아님, 기존 설정 따라감)
-
-        response.addCookie(cookie);
+    public ResponseEntity<String> logout() {
+        // 프론트엔드에서 localStorage의 토큰을 삭제하면 로그아웃입니다.
+        // 서버에서는 딱히 할 일이 없지만, 응답을 위해 남겨둡니다.
         return ResponseEntity.ok("로그아웃 되었습니다.");
     }
 
@@ -98,19 +59,16 @@ public class MemberController {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         }
-
-        // principal.getName()에는 로그인할 때 넣은 'email'이 들어있습니다.
         MemberDTO myInfo = memberService.getMyInfo(principal.getName());
         return ResponseEntity.ok(myInfo);
     }
 
-    // 5. 내 정보 수정 (이름, 주소, 전화번호)
+    // 5. 내 정보 수정
     @PutMapping("/members/me")
     public ResponseEntity<?> updateMyInfo(@RequestBody MemberUpdateDto updateDto, Principal principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         }
-
         try {
             memberService.updateMemberInfo(principal.getName(), updateDto);
             return ResponseEntity.ok("회원 정보 수정 완료");
@@ -125,12 +83,10 @@ public class MemberController {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         }
-
         try {
             memberService.updatePassword(principal.getName(), passDto);
             return ResponseEntity.ok("비밀번호 변경 완료");
         } catch (IllegalArgumentException e) {
-            // 비밀번호 불일치 등 명확한 에러 메시지 반환
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("비밀번호 변경 실패");
