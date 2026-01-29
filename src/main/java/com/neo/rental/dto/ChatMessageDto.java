@@ -1,10 +1,16 @@
 package com.neo.rental.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor; // [필수] [추가]
 
 @Data
+@NoArgsConstructor // [변경]
+@AllArgsConstructor
+@Builder
 public class ChatMessageDto {
-    private Long roomId;    // 방 번호
-    private Long senderId;  // 보낸 사람
-    private String message; // 내용
+    private Long roomId;
+    private Long senderId;
+    private String message;
 }

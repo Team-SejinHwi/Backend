@@ -26,11 +26,16 @@ spring:
 server:
   servlet:
     session:
-      timeout: 60m  # 세션 초기화 시간을 60분으로 설정 (m:분, s:초, h:시간)
+      timeout: 60m  # 세션 초기화 시간을 60분으로 설정
 
 jwt:
   secret: VlwEyVlPKZ6yV9yVlwEyVlPKZ6yV9yVlwEyVlPKZ6yV9yVlwEyVlPKZ6yV9y # 임의 설정
 
 file:
   upload-dir: /Users/oppenheimer/2026/rentalservice_sprint/rental-images/
-#  C:/rental-images/ # 윈도우 기준
+
+# 👇 [추가] 웹소켓 매핑 과정을 자세히 보기 위한 로그 설정
+logging:
+  level:
+    org.springframework.messaging: DEBUG
+    org.springframework.web.socket: DEBUG

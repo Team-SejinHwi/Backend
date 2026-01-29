@@ -48,7 +48,7 @@ public class SecurityConfig {
                 // 4. HTTP 요청 권한 설정
                 .authorizeHttpRequests(auth -> auth
                         // 인증 없이 허용할 경로들
-                        .requestMatchers("/", "/api/auth/**", "/api/items/**", "/images/**").permitAll()
+                        .requestMatchers("/", "/api/auth/**", "/api/items/**", "/images/**", "/ws-stomp/**").permitAll()
                         // 정적 리소스 허용
                         .requestMatchers("/css/**", "/images/**", "/js/**", "/favicon.ico").permitAll()
                         // 그 외 모든 요청은 인증 필요
@@ -67,13 +67,15 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOriginPatterns(List.of(
-                "http://localhost:3000",
-                "http://127.0.0.1:3000",
-                "https://*.ngrok-free.app",
-                "https://*.ngrok-free.dev",
-                "https://*.ngrok.io"
-        ));
+        // [변경]채팅 시스템 테스트를 위한 임시 조치
+        configuration.setAllowedOriginPatterns(List.of("*"));
+//        configuration.setAllowedOriginPatterns(List.of(
+//                "http://localhost:3000",
+//                "http://127.0.0.1:3000",
+//                "https://*.ngrok-free.app",
+//                "https://*.ngrok-free.dev",
+//                "https://*.ngrok.io"
+//        ));
 
         configuration.setAllowedMethods(List.of("*"));
         configuration.setAllowedHeaders(List.of("*"));

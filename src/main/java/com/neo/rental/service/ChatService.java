@@ -17,19 +17,17 @@ public class ChatService {
     private final ItemRepository itemRepository;
     private final MemberRepository memberRepository;
 
-    // 1. 채팅방 생성 또는 조회
+    // 1. 채팅방 생성 또는 조회 (기존 로직 유지)
     public Long createOrGetChatRoom(Long itemId, String buyerEmail) {
         MemberEntity buyer = memberRepository.findByEmail(buyerEmail)
                 .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
         ItemEntity item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new IllegalArgumentException("상품 없음"));
 
-        // 자가 문의 방지
         if (item.getMember().getEmail().equals(buyerEmail)) {
             throw new IllegalStateException("자신의 상품에는 문의할 수 없습니다.");
         }
 
-        // 이미 방이 있으면 ID 리턴, 없으면 만들어서 리턴
         return chatRoomRepository.findByItem_IdAndBuyer_Id(itemId, buyer.getId())
                 .map(ChatRoomEntity::getId)
                 .orElseGet(() -> {
@@ -42,8 +40,8 @@ public class ChatService {
                 });
     }
 
-    // 2. 메시지 저장
-    public void saveMessage(ChatMessageDto dto) {
+    // 2. 메시지 저장 [수정됨: void -> ChatMessageEntity 반환]
+    public ChatMessageEntity saveMessage(ChatMessageDto dto) { //
         ChatRoomEntity room = chatRoomRepository.findById(dto.getRoomId())
                 .orElseThrow(() -> new IllegalArgumentException("방 없음"));
 
@@ -53,10 +51,10 @@ public class ChatService {
         ChatMessageEntity message = ChatMessageEntity.builder()
                 .chatRoom(room)
                 .senderId(sender.getId())
-                .senderName(sender.getName())
+                .senderName(sender.getName()) // DB에서 조회한 정확한 이름 저장
                 .message(dto.getMessage())
                 .build();
 
-        chatMessageRepository.save(message);
+        return chatMessageRepository.save(message); // 저장된 객체(시간 포함) 반환
     }
 }

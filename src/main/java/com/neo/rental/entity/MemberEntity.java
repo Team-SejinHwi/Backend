@@ -27,7 +27,7 @@ public class MemberEntity {
     // memberPassword -> password 로 변경
     @Column(nullable = false)
     private String password;
-    
+
     @Column(nullable = false)
     private String name;
 
