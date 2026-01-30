@@ -90,11 +90,11 @@ public class ItemService {
         item.updateItem(
                 itemFormDto.getTitle(),
                 itemFormDto.getContent(),
+                itemFormDto.getCategory(),    //[추가] 카테고리
                 itemFormDto.getPrice(),
                 itemFormDto.getLocation(),
                 targetImageUrl,
 
-                // 👇 [추가] 좌표 및 주소 수정 반영
                 itemFormDto.getLatitude(),
                 itemFormDto.getLongitude(),
                 itemFormDto.getAddress()

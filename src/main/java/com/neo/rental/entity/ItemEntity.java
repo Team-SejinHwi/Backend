@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import com.neo.rental.constant.ItemCategory; // import 필수!
 
 import java.time.LocalDateTime;
 
@@ -29,6 +30,11 @@ public class ItemEntity {
     // 내용: TEXT 타입
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
+
+    // ▼ [추가] 카테고리 (DB에는 영어 문자열로 저장됨: "DIGITAL")
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ItemCategory category;
 
     @Column(nullable = false)
     private int price;
@@ -67,15 +73,15 @@ public class ItemEntity {
     private LocalDateTime modifiedAt;
 
     // 상품 정보 수정 메소드 (좌표 정보 추가)
-    public void updateItem(String title, String content, Integer price, String location, String itemImageUrl,
+    public void updateItem(String title, String content, ItemCategory category, Integer price, String location, String itemImageUrl,
                            Double tradeLatitude, Double tradeLongitude, String tradeAddress) {
         this.title = title;
         this.content = content;
+        this.category = category; // [추가] 카테고리 추가
         this.price = price;
         this.location = location;
         this.itemImageUrl = itemImageUrl;
 
-        // 👇 [추가] 좌표 수정 반영
         this.tradeLatitude = tradeLatitude;
         this.tradeLongitude = tradeLongitude;
         this.tradeAddress = tradeAddress;
