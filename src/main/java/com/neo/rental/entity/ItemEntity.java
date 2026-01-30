@@ -31,7 +31,7 @@ public class ItemEntity {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
-    // ▼ [추가] 카테고리 (DB에는 영어 문자열로 저장됨: "DIGITAL")
+    // [추가] 카테고리 (DB에는 영어 문자열로 저장됨: "DIGITAL")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ItemCategory category;
@@ -43,7 +43,7 @@ public class ItemEntity {
     @Column(length = 100)
     private String location;
 
-    // 👇 [추가] 좌표 및 상세 주소 저장용 컬럼
+    // [추가] 좌표 및 상세 주소 저장용 컬럼
     @Column(name = "trade_latitude")
     private Double tradeLatitude;   // 위도 (y)
 
@@ -72,12 +72,12 @@ public class ItemEntity {
     @UpdateTimestamp
     private LocalDateTime modifiedAt;
 
-    // 상품 정보 수정 메소드 (좌표 정보 추가)
-    public void updateItem(String title, String content, ItemCategory category, Integer price, String location, String itemImageUrl,
+    // 상품 정보 수정 메소드 (카테고리 업데이트 로직 추가 완료)
+    public void updateItem(String title, ItemCategory category, String content, Integer price, String location, String itemImageUrl,
                            Double tradeLatitude, Double tradeLongitude, String tradeAddress) {
         this.title = title;
+        this.category = category; // 👈 [핵심 수정] 이 줄이 있어야 DB값이 바뀝니다!
         this.content = content;
-        this.category = category; // [추가] 카테고리 추가
         this.price = price;
         this.location = location;
         this.itemImageUrl = itemImageUrl;
