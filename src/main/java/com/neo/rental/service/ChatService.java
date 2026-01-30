@@ -1,11 +1,15 @@
 package com.neo.rental.service;
 
 import com.neo.rental.dto.ChatMessageDto;
+import com.neo.rental.dto.ChatRoomListDto;
 import com.neo.rental.entity.*;
 import com.neo.rental.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -56,5 +60,40 @@ public class ChatService {
                 .build();
 
         return chatMessageRepository.save(message); // 저장된 객체(시간 포함) 반환
+    }
+
+    // 👇 [추가] 내 채팅방 목록 조회 (기존 Repository 활용)
+    @Transactional(readOnly = true)
+    public List<ChatRoomListDto> findAllRoom(String userEmail) {
+        // 1. 내 정보(Member)를 먼저 찾아서 ID를 알아냄
+        MemberEntity me = memberRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("회원 정보가 없습니다."));
+
+        // 2. 내 ID가 구매자(Buyer)이거나 판매자(Seller)인 방을 모두 찾음
+        //    (buyerId 자리에 내 ID, sellerId 자리에 내 ID를 넣어서 OR 검색)
+        List<ChatRoomEntity> rooms = chatRoomRepository.findByBuyer_IdOrSeller_Id(me.getId(), me.getId());
+
+        // 3. DTO로 변환
+        return rooms.stream().map(room -> {
+            String partnerName;
+
+            // 상대방 이름 판별
+            // 방의 구매자 ID가 내 ID와 같다면 -> 상대방은 판매자
+            if (room.getBuyer().getId().equals(me.getId())) {
+                partnerName = room.getSeller().getName();
+            }
+            // 아니라면 (내가 판매자) -> 상대방은 구매자
+            else {
+                partnerName = room.getBuyer().getName();
+            }
+
+            return ChatRoomListDto.builder()
+                    .roomId(room.getId())
+                    .itemId(room.getItem().getId())
+                    .itemTitle(room.getItem().getTitle())
+                    .itemImageUrl(room.getItem().getItemImageUrl()) // 이미지
+                    .partnerName(partnerName)
+                    .build();
+        }).collect(Collectors.toList());
     }
 }

@@ -19,7 +19,12 @@ public class ItemResponseDto {
     private ItemStatus itemStatus;
     private LocalDateTime createdAt;
 
-    // 프론트엔드 요청 구조: item.owner.email, item.owner.phone ...
+    // 👇 [추가] 프론트로 내려줄 좌표 정보
+    private Double tradeLatitude;
+    private Double tradeLongitude;
+    private String tradeAddress;
+
+    // 프론트엔드 요청 구조: item.owner.email ...
     private OwnerInfo owner;
 
     public ItemResponseDto(ItemEntity item) {
@@ -32,33 +37,34 @@ public class ItemResponseDto {
         this.itemStatus = item.getItemStatus();
         this.createdAt = item.getCreatedAt();
 
+        // 👇 [추가] 엔티티에서 좌표 꺼내기
+        this.tradeLatitude = item.getTradeLatitude();
+        this.tradeLongitude = item.getTradeLongitude();
+        this.tradeAddress = item.getTradeAddress();
+
         // [핵심] 주인 정보 주입
         if (item.getMember() != null) {
-            // 이름 방어 로직
             String safeName = item.getMember().getName();
             if (safeName == null || safeName.trim().isEmpty()) safeName = "이름 없음";
 
-            // ★ 전화번호, 주소도 꺼내서 넣어줌 (Entity에 해당 필드가 있어야 함)
             this.owner = new OwnerInfo(
                     item.getMember().getId(),
                     item.getMember().getEmail(),
                     safeName,
-                    item.getMember().getPhone(),   // [추가] 전화번호
-                    item.getMember().getAddress()  // [추가] 주소
+                    item.getMember().getPhone(),
+                    item.getMember().getAddress()
             );
         } else {
-            // 주인이 없는 경우 (빈 값으로 채움)
             this.owner = new OwnerInfo(-1L, "", "알 수 없음", "", "");
         }
     }
 
-    // ★ [중요] 내부 클래스 (Lombok 대신 수동 Getter 사용)
     public static class OwnerInfo {
         private Long id;
         private String email;
         private String name;
-        private String phone;   // [추가]
-        private String address; // [추가]
+        private String phone;
+        private String address;
 
         public OwnerInfo(Long id, String email, String name, String phone, String address) {
             this.id = id;
@@ -68,12 +74,9 @@ public class ItemResponseDto {
             this.address = address;
         }
 
-        // ▼ JSON 변환을 위해 Getter 필수
         public Long getId() { return id; }
         public String getEmail() { return email; }
         public String getName() { return name; }
-
-        // [추가된 Getter]
         public String getPhone() { return phone; }
         public String getAddress() { return address; }
     }
