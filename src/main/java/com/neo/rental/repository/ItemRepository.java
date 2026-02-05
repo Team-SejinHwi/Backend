@@ -15,7 +15,7 @@ public interface ItemRepository extends JpaRepository<ItemEntity, Long> {
      * 2. 키워드 (포함)
      * 3. 위치 (반경)
      * 4. 정렬 (거리순/최신순)
-     * 5. 제한 (최대 300개)
+     * 5. 제한 (동적 Limit)
      */
     @Query(value = "SELECT * FROM item_table i " +
             "WHERE i.item_status = 'AVAILABLE' " +
@@ -30,13 +30,14 @@ public interface ItemRepository extends JpaRepository<ItemEntity, Long> {
             "       THEN ST_Distance_Sphere(POINT(:lng, :lat), POINT(i.trade_longitude, i.trade_latitude)) " +
             "       ELSE i.created_at END " +
             "   ASC, i.created_at DESC " +
-            "LIMIT 300", // [안전장치] 지도 렉 방지를 위해 최대 300개까지만 조회
+            "LIMIT :limit", // 👈 [수정] 동적 Limit 적용
             nativeQuery = true)
     List<ItemEntity> searchItems(
             @Param("category") String category,
             @Param("keyword") String keyword,
             @Param("lat") Double lat,
             @Param("lng") Double lng,
-            @Param("radius") Double radius
+            @Param("radius") Double radius,
+            @Param("limit") int limit // 👈 [추가]
     );
 }

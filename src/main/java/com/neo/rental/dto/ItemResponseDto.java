@@ -1,11 +1,13 @@
 package com.neo.rental.dto;
 
+import com.neo.rental.constant.ItemCategory;
 import com.neo.rental.constant.ItemStatus;
 import com.neo.rental.entity.ItemEntity;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List; // [필수] List import
 
 @Getter @Setter
 public class ItemResponseDto {
@@ -19,13 +21,21 @@ public class ItemResponseDto {
     private ItemStatus itemStatus;
     private LocalDateTime createdAt;
 
-    // 👇 [추가] 프론트로 내려줄 좌표 정보
+    // 카테고리 정보
+    private ItemCategory category;
+    private String categoryName;
+
+    // 좌표 정보
     private Double tradeLatitude;
     private Double tradeLongitude;
     private String tradeAddress;
 
-    // 프론트엔드 요청 구조: item.owner.email ...
     private OwnerInfo owner;
+
+    // 👇 [추가] 리뷰 관련 필드
+    private List<ReviewResponseDto> reviews; // 해당 상품의 리뷰 목록
+    private Double averageRating;            // 평균 별점 (예: 4.5)
+    private int reviewCount;                 // 리뷰 개수
 
     public ItemResponseDto(ItemEntity item) {
         this.itemId = item.getId();
@@ -37,12 +47,13 @@ public class ItemResponseDto {
         this.itemStatus = item.getItemStatus();
         this.createdAt = item.getCreatedAt();
 
-        // 👇 [추가] 엔티티에서 좌표 꺼내기
+        this.category = item.getCategory();
+        this.categoryName = (item.getCategory() != null) ? item.getCategory().getDescription() : null;
+
         this.tradeLatitude = item.getTradeLatitude();
         this.tradeLongitude = item.getTradeLongitude();
         this.tradeAddress = item.getTradeAddress();
 
-        // [핵심] 주인 정보 주입
         if (item.getMember() != null) {
             String safeName = item.getMember().getName();
             if (safeName == null || safeName.trim().isEmpty()) safeName = "이름 없음";
@@ -57,8 +68,11 @@ public class ItemResponseDto {
         } else {
             this.owner = new OwnerInfo(-1L, "", "알 수 없음", "", "");
         }
+
+        // 주의: reviews, averageRating은 Service에서 별도로 조회하여 set 합니다.
     }
 
+    @Getter @Setter
     public static class OwnerInfo {
         private Long id;
         private String email;
@@ -73,11 +87,5 @@ public class ItemResponseDto {
             this.phone = phone;
             this.address = address;
         }
-
-        public Long getId() { return id; }
-        public String getEmail() { return email; }
-        public String getName() { return name; }
-        public String getPhone() { return phone; }
-        public String getAddress() { return address; }
     }
 }

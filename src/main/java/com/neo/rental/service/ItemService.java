@@ -4,10 +4,13 @@ import com.neo.rental.constant.ItemCategory;
 import com.neo.rental.constant.ItemStatus;
 import com.neo.rental.dto.ItemFormDto;
 import com.neo.rental.dto.ItemResponseDto;
+import com.neo.rental.dto.ReviewResponseDto; // [추가]
 import com.neo.rental.entity.ItemEntity;
 import com.neo.rental.entity.MemberEntity;
+import com.neo.rental.entity.ReviewEntity; // [추가]
 import com.neo.rental.repository.ItemRepository;
 import com.neo.rental.repository.MemberRepository;
+import com.neo.rental.repository.ReviewRepository; // [추가]
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +26,7 @@ public class ItemService {
 
     private final ItemRepository itemRepository;
     private final MemberRepository memberRepository;
+    private final ReviewRepository reviewRepository; // 👈 [추가] 리뷰 조회를 위해 주입
 
     // [기존] 저장 로직 (유지)
     public Long saveItem(ItemFormDto itemFormDto, String email) {
@@ -47,42 +51,70 @@ public class ItemService {
         return item.getId();
     }
 
-    // [수정] 상품 목록 검색 (List 반환, 페이징 제거)
+    // [기존] 상품 목록 검색 (유지)
     @Transactional(readOnly = true)
     public List<ItemResponseDto> searchItems(
             ItemCategory category,
             String keyword,
             Double lat,
             Double lng,
-            Integer radiusKm) {
+            Integer radiusKm,
+            Integer limit) {
 
-        // 1. 반경 계산 (기본 5km)
         Double radiusMeter = (radiusKm != null) ? radiusKm * 1000.0 : 5000.0;
-
-        // 2. 카테고리 Enum -> String 변환
         String categoryName = (category != null) ? category.name() : null;
+        int queryLimit = (limit != null && limit > 0) ? limit : 100;
 
-        // 3. 레포지토리 호출 (List 반환)
         List<ItemEntity> itemList = itemRepository.searchItems(
                 categoryName,
                 keyword,
                 lat,
                 lng,
-                radiusMeter
+                radiusMeter,
+                queryLimit
         );
 
-        // 4. Entity List -> DTO List 변환
         return itemList.stream()
-                .map(ItemResponseDto::new) // DTO 생성자 사용
+                .map(ItemResponseDto::new)
                 .collect(Collectors.toList());
     }
 
-    // [기존] 상세 조회 (유지)
+    // ✅ [수정됨] 상세 조회 (리뷰 + 평점 포함)
     @Transactional(readOnly = true)
     public ItemResponseDto getItemDetail(Long itemId) {
+        // 1. 상품 조회
         ItemEntity item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new EntityNotFoundException("해당 상품이 존재하지 않습니다. id=" + itemId));
-        return new ItemResponseDto(item);
+
+        // 2. 기본 DTO 생성 (Item 정보만 있음)
+        ItemResponseDto responseDto = new ItemResponseDto(item);
+
+        // 3. [추가] 리뷰 목록 조회 (최신순)
+        List<ReviewEntity> reviewEntities = reviewRepository.findByItem_IdOrderByCreatedAtDesc(itemId);
+
+        // 4. [추가] 리뷰 DTO 리스트로 변환
+        List<ReviewResponseDto> reviewDtos = reviewEntities.stream()
+                .map(ReviewResponseDto::new)
+                .collect(Collectors.toList());
+
+        // 5. [추가] 평균 별점 계산
+        double averageRating = 0.0;
+        if (!reviewEntities.isEmpty()) {
+            averageRating = reviewEntities.stream()
+                    .mapToInt(ReviewEntity::getRating)
+                    .average()
+                    .orElse(0.0);
+
+            // 소수점 한 자리 반올림 (예: 4.333 -> 4.3)
+            averageRating = Math.round(averageRating * 10.0) / 10.0;
+        }
+
+        // 6. [추가] DTO에 리뷰 정보 세팅
+        responseDto.setReviews(reviewDtos);
+        responseDto.setAverageRating(averageRating);
+        responseDto.setReviewCount(reviewEntities.size());
+
+        return responseDto;
     }
 
     // [기존] 수정 로직 (유지)

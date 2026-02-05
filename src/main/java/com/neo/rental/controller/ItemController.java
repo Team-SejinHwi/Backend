@@ -50,23 +50,23 @@ public class ItemController {
         }
     }
 
-    // 2. [수정됨] 상품 목록 조회 (List 반환, 페이징 X)
-    // 요청 예시: /api/items (전체 최신순)
-    // 요청 예시: /api/items?lat=37.5&lng=127.0&radius=5 (내 주변 5km)
+    // 2. [수정됨] 상품 목록 조회 (Limit 적용 완료)
+    // 메인화면용(8개): GET /api/items?limit=8
+    // 검색용(기본 300개): GET /api/items?keyword=맥북
     @GetMapping
     public ResponseEntity<List<ItemResponseDto>> searchItems(
             @RequestParam(required = false) ItemCategory category,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Double lat,
             @RequestParam(required = false) Double lng,
-            @RequestParam(required = false) Integer radius
+            @RequestParam(required = false) Integer radius,
+            @RequestParam(required = false) Integer limit // 👈 [추가] 파라미터 수신
     ) {
-        // Service 호출 (단순 List 반환)
+        // Service 호출 (limit 값 전달)
         List<ItemResponseDto> items = itemService.searchItems(
-                category, keyword, lat, lng, radius
+                category, keyword, lat, lng, radius, limit
         );
 
-        // 깔끔하게 배열([]) 형태로 반환
         return ResponseEntity.ok(items);
     }
 
