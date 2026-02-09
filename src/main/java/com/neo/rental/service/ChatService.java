@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -58,6 +59,8 @@ public class ChatService {
                 .senderId(sender.getId())
                 .senderName(sender.getName()) // DB 저장 시점의 이름 고정
                 .message(dto.getMessage())
+                // [추가] 시간 DB의존 않고 직접 주입.
+                .sendDate(LocalDateTime.now())
                 .build();
 
         ChatMessageEntity savedMessage = chatMessageRepository.save(message);

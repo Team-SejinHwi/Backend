@@ -70,11 +70,11 @@ public class ItemController {
         return ResponseEntity.ok(items);
     }
 
-    // 3. 상세 조회 (유지)
+    // ✅ [3. 상세 조회 (수정됨)]
     @GetMapping("/{itemId}")
-    public ResponseEntity<ItemResponseDto> getItemDetail(@PathVariable Long itemId) {
-        ItemResponseDto item = itemService.getItemDetail(itemId);
-        return ResponseEntity.ok(item);
+    public ResponseEntity<ItemResponseDto> getItemDetail(@PathVariable Long itemId, Principal principal) {
+        String email = (principal != null) ? principal.getName() : null;
+        return ResponseEntity.ok(itemService.getItemDetail(itemId, email));
     }
 
     // 4. 수정 (유지)

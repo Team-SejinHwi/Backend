@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.List; // [필수] List import
+import java.util.List;
 
 @Getter @Setter
 public class ItemResponseDto {
@@ -32,10 +32,13 @@ public class ItemResponseDto {
 
     private OwnerInfo owner;
 
-    // 👇 [추가] 리뷰 관련 필드
-    private List<ReviewResponseDto> reviews; // 해당 상품의 리뷰 목록
-    private Double averageRating;            // 평균 별점 (예: 4.5)
-    private int reviewCount;                 // 리뷰 개수
+    // ✅ [리뷰 관련 필드]
+    private List<ReviewResponseDto> reviews;
+    private Double averageRating;
+    private int reviewCount;
+
+    // ✅ [신청 상태 필드] (True면 버튼 비활성화)
+    private boolean isRequested;
 
     public ItemResponseDto(ItemEntity item) {
         this.itemId = item.getId();
@@ -68,8 +71,6 @@ public class ItemResponseDto {
         } else {
             this.owner = new OwnerInfo(-1L, "", "알 수 없음", "", "");
         }
-
-        // 주의: reviews, averageRating은 Service에서 별도로 조회하여 set 합니다.
     }
 
     @Getter @Setter
