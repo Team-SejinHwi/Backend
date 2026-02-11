@@ -1,6 +1,6 @@
 package com.neo.rental.service;
 
-import com.neo.rental.constant.ItemStatus; // [필수 Import]
+import com.neo.rental.constant.ItemStatus;
 import com.neo.rental.constant.RentalStatus;
 import com.neo.rental.dto.RentalDecisionDto;
 import com.neo.rental.dto.RentalRequestDto;
@@ -42,6 +42,12 @@ public class RentalService {
         if (dto.getStartDate().isAfter(dto.getEndDate())) {
             throw new IllegalArgumentException("종료 시간이 시작 시간보다 빠를 수 없습니다.");
         }
+
+        // 아이템이 이미 대여중인지 확인 (방어 로직)
+        if (item.getItemStatus() == ItemStatus.RENTED) {
+            throw new IllegalStateException("현재 대여 불가능한 상품입니다.");
+        }
+
         long hours = ChronoUnit.HOURS.between(dto.getStartDate(), dto.getEndDate());
         if (hours < 1) hours = 1;
         int totalPrice = (int) (hours * item.getPrice());
@@ -78,32 +84,96 @@ public class RentalService {
                 .collect(Collectors.toList());
     }
 
-    // 4. 승인/거절 (유지)
+    // 4. 승인/거절 (수정됨: 승인 시 결제 대기 상태로 변경)
     public RentalResponseDto handleDecision(Long rentalId, String ownerEmail, RentalDecisionDto dto) {
         RentalEntity rental = rentalRepository.findById(rentalId)
                 .orElseThrow(() -> new IllegalArgumentException("신청 정보 없음"));
 
+        // 주인 검증
         if (!rental.getItem().getMember().getEmail().equals(ownerEmail)) {
             throw new IllegalStateException("주인만 처리 가능합니다.");
         }
+        // 중복 처리 방지
         if (rental.getStatus() != RentalStatus.WAITING) {
             throw new IllegalStateException("이미 처리된 건입니다.");
         }
 
         if (dto.isApproved()) {
+            // [방어 로직] 승인 시점에 아이템이 이미 선점(RENTED)되었는지 확인
+            if (rental.getItem().getItemStatus() == ItemStatus.RENTED) {
+                throw new IllegalStateException("이미 다른 예약으로 인해 대여중인 상품입니다.");
+            }
+
+            // 1) 렌탈 상태: APPROVED (결제 대기)
             rental.setStatus(RentalStatus.APPROVED);
             rental.setRejectReason(null);
+
+            // 2) 아이템 상태: RENTED (선점 처리 - 다른 사람이 검색 못하게)
+            // 결제 대기 중에도 물건은 확보되어야 하므로 RENTED로 설정
+            rental.getItem().setItemStatus(ItemStatus.RENTED);
+
         } else {
+            // 거절 처리
             if (dto.getRejectReason() == null || dto.getRejectReason().trim().isEmpty()) {
                 throw new IllegalArgumentException("거절 사유 필수");
             }
             rental.setStatus(RentalStatus.REJECTED);
             rental.setRejectReason(dto.getRejectReason());
+            // 아이템 상태는 AVAILABLE 유지
         }
+
         return new RentalResponseDto(rental);
     }
 
-    // 5. 취소 (유지)
+    // [NEW] 5. 대여 시작 (인계 확인) - 주인이 호출
+    public RentalResponseDto startRental(Long rentalId, String ownerEmail) {
+        RentalEntity rental = rentalRepository.findById(rentalId)
+                .orElseThrow(() -> new IllegalArgumentException("대여 기록 없음"));
+
+        // 주인 검증
+        if (!rental.getItem().getMember().getEmail().equals(ownerEmail)) {
+            throw new IllegalStateException("물건 주인만 대여를 시작할 수 있습니다.");
+        }
+
+        // 상태 검증: 결제가 완료된(PAID) 상태여야만 시작 가능
+        if (rental.getStatus() != RentalStatus.PAID) {
+            throw new IllegalStateException("결제가 완료되지 않았거나, 이미 진행중인 대여입니다.");
+        }
+
+        // 상태 변경: PAID -> RENTING (실제 사용 시작)
+        rental.setStatus(RentalStatus.RENTING);
+
+        return new RentalResponseDto(rental);
+    }
+
+    // 6. 반납 처리 (수정됨: RENTING 상태에서만 가능)
+    public RentalResponseDto returnItem(Long rentalId, String email) {
+        RentalEntity rental = rentalRepository.findById(rentalId)
+                .orElseThrow(() -> new IllegalArgumentException("대여 기록 없음"));
+
+        boolean isOwner = rental.getItem().getMember().getEmail().equals(email);
+        boolean isRenter = rental.getRenter().getEmail().equals(email);
+
+        if (!isOwner && !isRenter) {
+            throw new IllegalStateException("반납 권한이 없습니다.");
+        }
+
+        // [중요] 상태 체크: 실제 대여 중(RENTING)일 때만 반납 가능
+        // APPROVED나 PAID 상태에서 취소는 'cancelRental'을 사용해야 함
+        if (rental.getStatus() != RentalStatus.RENTING) {
+            throw new IllegalStateException("대여 중(인계 완료)인 상태에서만 반납이 가능합니다.");
+        }
+
+        // 상태 변경: RETURNED
+        rental.setStatus(RentalStatus.RETURNED);
+
+        // 아이템 복구: AVAILABLE
+        rental.getItem().setItemStatus(ItemStatus.AVAILABLE);
+
+        return new RentalResponseDto(rental);
+    }
+
+    // 7. 취소 (유지)
     public RentalResponseDto cancelRental(Long rentalId, String renterEmail) {
         RentalEntity rental = rentalRepository.findById(rentalId)
                 .orElseThrow(() -> new IllegalArgumentException("신청 정보 없음"));
@@ -111,32 +181,19 @@ public class RentalService {
         if (!rental.getRenter().getEmail().equals(renterEmail)) {
             throw new IllegalStateException("본인만 취소 가능");
         }
+
+        // 이미 사용 시작(RENTING)했거나 반납(RETURNED)된 건은 취소 불가
+        // WAITING, APPROVED, PAID 상태에서는 취소 가능 (단, PAID 취소 시 환불 로직 필요 - 여기선 생략)
         if (rental.getStatus() == RentalStatus.RENTING || rental.getStatus() == RentalStatus.RETURNED) {
             throw new IllegalStateException("이미 진행/완료된 건은 취소 불가");
         }
-        rental.setStatus(RentalStatus.CANCELED);
-        return new RentalResponseDto(rental);
-    }
 
-    // 👇 [6. 추가] 반납 처리 (주인 또는 대여자가 실행)
-    public RentalResponseDto completeReturn(Long rentalId, String email) {
-        RentalEntity rental = rentalRepository.findById(rentalId)
-                .orElseThrow(() -> new IllegalArgumentException("대여 기록 없음"));
-
-        // 권한 체크: 주인(Owner) 또는 빌린사람(Renter) 모두 반납 처리 가능하도록 허용
-        boolean isOwner = rental.getItem().getMember().getEmail().equals(email);
-        boolean isRenter = rental.getRenter().getEmail().equals(email);
-
-        if (!isOwner && !isRenter) {
-            throw new IllegalStateException("반납 처리 권한이 없습니다.");
+        // 취소 시 아이템 상태가 RENTED였다면 풀어줘야 함 (APPROVED 상태에서 취소했을 경우)
+        if (rental.getItem().getItemStatus() == ItemStatus.RENTED) {
+            rental.getItem().setItemStatus(ItemStatus.AVAILABLE);
         }
 
-        // 1. 상태를 RETURNED(반납 완료)로 변경
-        rental.setStatus(RentalStatus.RETURNED);
-
-        // 2. 아이템 상태를 AVAILABLE(대여 가능)로 복구 -> 다시 검색됨!
-        rental.getItem().setItemStatus(ItemStatus.AVAILABLE);
-
+        rental.setStatus(RentalStatus.CANCELED);
         return new RentalResponseDto(rental);
     }
 }

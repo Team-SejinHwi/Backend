@@ -8,10 +8,10 @@ spring:
 
   datasource:
     # 1. 접속 주소에 allowPublicKeyRetrieval=true 필수! (RSA 보안 문제 해결)
-    url: jdbc:mysql://localhost:3306/neorental_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true
+    url: ${DB_URL}
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password: 0902
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 
   jpa:
     # 2. 최신 하이버네이트용 방언 명시
@@ -24,12 +24,13 @@ spring:
         show_sql: true
 
 server:
+  forward-headers-strategy: framework # 추가 (Cloudflare HTTPS 헤더 인식)
   servlet:
     session:
       timeout: 60m  # 세션 초기화 시간을 60분으로 설정
 
 jwt:
-  secret: VlwEyVlPKZ6yV9yVlwEyVlPKZ6yV9yVlwEyVlPKZ6yV9yVlwEyVlPKZ6yV9y # 임의 설정
+  secret: ${JWT_SECRET}
 
 file:
   upload-dir: /Users/oppenheimer/2026/rentalservice_sprint/rental-images/

@@ -54,21 +54,28 @@ public class RentalController {
     @PostMapping("/{rentalId}/decision")
     public ResponseEntity<?> handleDecision(@PathVariable Long rentalId, @RequestBody RentalDecisionDto decisionDto, Principal principal) {
         RentalResponseDto result = rentalService.handleDecision(rentalId, principal.getName(), decisionDto);
-        String msg = decisionDto.isApproved() ? "예약이 승인되었습니다." : "예약이 거절되었습니다.";
+        String msg = decisionDto.isApproved() ? "예약이 승인되었습니다. (결제 대기)" : "예약이 거절되었습니다.";
         return ResponseEntity.ok(createResponse(200, msg, result));
     }
 
-    // 5. 취소
+    // [NEW] 5. 대여 시작 (인계 확인) - 주인이 호출
+    @PostMapping("/{rentalId}/start")
+    public ResponseEntity<?> startRental(@PathVariable Long rentalId, Principal principal) {
+        RentalResponseDto result = rentalService.startRental(rentalId, principal.getName());
+        return ResponseEntity.ok(createResponse(200, "대여가 시작되었습니다. (인계 확인)", result));
+    }
+
+    // 6. 취소
     @PostMapping("/{rentalId}/cancel")
     public ResponseEntity<?> cancel(@PathVariable Long rentalId, Principal principal) {
         RentalResponseDto result = rentalService.cancelRental(rentalId, principal.getName());
         return ResponseEntity.ok(createResponse(200, "예약이 취소되었습니다.", result));
     }
 
-    // 👇 [6. 추가] 반납 완료 처리 (POST)
+    // 7. 반납 완료 처리
     @PostMapping("/{rentalId}/return")
     public ResponseEntity<?> returnItem(@PathVariable Long rentalId, Principal principal) {
-        RentalResponseDto result = rentalService.completeReturn(rentalId, principal.getName());
+        RentalResponseDto result = rentalService.returnItem(rentalId, principal.getName());
         return ResponseEntity.ok(createResponse(200, "반납이 완료되었습니다.", result));
     }
 }

@@ -47,8 +47,9 @@ public class SecurityConfig {
 
                 // 4. HTTP 요청 권한 설정
                 .authorizeHttpRequests(auth -> auth
-                        // 인증 없이 허용할 경로들
-                        .requestMatchers("/", "/api/auth/**", "/api/items/**", "/images/**", "/api/reviews/**","/ws-stomp/**").permitAll()
+                        // 인증 없이 허용할 경로들 + Swagger 관련 주소 허용
+                        .requestMatchers("/", "/api/auth/**", "/api/items/**", "/images/**", "/api/reviews/**",
+                                "/ws-stomp/**", "/v3/api-docs/**","/swagger-ui/**","/swagger-ui.html").permitAll()
                         // 정적 리소스 허용
                         .requestMatchers("/css/**", "/images/**", "/js/**", "/favicon.ico").permitAll()
                         // 그 외 모든 요청은 인증 필요
