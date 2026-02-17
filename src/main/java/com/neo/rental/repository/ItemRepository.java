@@ -11,14 +11,12 @@ public interface ItemRepository extends JpaRepository<ItemEntity, Long> {
 
     /**
      * [통합 검색 쿼리 - 리스트 버전]
-     * 1. 카테고리 (일치)
-     * 2. 키워드 (포함)
-     * 3. 위치 (반경)
-     * 4. 정렬 (거리순/최신순)
-     * 5. 제한 (동적 Limit)
+     * 수정사항: item_status 조건을 'AVAILABLE' 단일 체크에서
+     * ('AVAILABLE', 'RENTED') 포함 체크로 변경하거나,
+     * 상태 조건을 제거하여 모든 상품을 노출시킴.
      */
     @Query(value = "SELECT * FROM item_table i " +
-            "WHERE i.item_status = 'AVAILABLE' " +
+            "WHERE i.item_status IN ('AVAILABLE', 'RENTED','SOLD_OUT') " + // 👈 [핵심 수정] RENTED 상태도 조회 목록에 포함!
             "AND (:category IS NULL OR i.category = :category) " +
             "AND (:keyword IS NULL OR i.title LIKE CONCAT('%', :keyword, '%')) " +
             "AND (" +
@@ -30,7 +28,7 @@ public interface ItemRepository extends JpaRepository<ItemEntity, Long> {
             "       THEN ST_Distance_Sphere(POINT(:lng, :lat), POINT(i.trade_longitude, i.trade_latitude)) " +
             "       ELSE i.created_at END " +
             "   ASC, i.created_at DESC " +
-            "LIMIT :limit", // 👈 [수정] 동적 Limit 적용
+            "LIMIT :limit",
             nativeQuery = true)
     List<ItemEntity> searchItems(
             @Param("category") String category,
@@ -38,6 +36,6 @@ public interface ItemRepository extends JpaRepository<ItemEntity, Long> {
             @Param("lat") Double lat,
             @Param("lng") Double lng,
             @Param("radius") Double radius,
-            @Param("limit") int limit // 👈 [추가]
+            @Param("limit") int limit
     );
 }
