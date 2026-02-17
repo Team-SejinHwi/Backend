@@ -1,20 +1,18 @@
 spring:
   servlet:
     multipart:
-      max-file-size: 10MB      # 파일 하나 최대 크기
-      max-request-size: 10MB   # 요청 전체 최대 크기
+      max-file-size: 10MB
+      max-request-size: 10MB
   application:
     name: rental
 
   datasource:
-    # 1. 접속 주소에 allowPublicKeyRetrieval=true 필수! (RSA 보안 문제 해결)
     url: ${DB_URL}
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
   jpa:
-    # 2. 최신 하이버네이트용 방언 명시
     database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: update
@@ -24,10 +22,10 @@ spring:
         show_sql: true
 
 server:
-  forward-headers-strategy: framework # 추가 (Cloudflare HTTPS 헤더 인식)
+  forward-headers-strategy: framework
   servlet:
     session:
-      timeout: 60m  # 세션 초기화 시간을 60분으로 설정
+      timeout: 60m
 
 jwt:
   secret: ${JWT_SECRET}
@@ -35,8 +33,11 @@ jwt:
 file:
   upload-dir: /Users/oppenheimer/2026/rentalservice_sprint/rental-images/
 
-# 👇 [추가] 웹소켓 매핑 과정을 자세히 보기 위한 로그 설정
 logging:
   level:
     org.springframework.messaging: DEBUG
     org.springframework.web.socket: DEBUG
+
+# 👇 [수정] 환경변수 TOSS_SECRET_KEY 값을 가져오도록 변경
+toss:
+  secret-key: ${TOSS_SECRET_KEY}

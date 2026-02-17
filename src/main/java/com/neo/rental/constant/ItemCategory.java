@@ -6,6 +6,7 @@ import lombok.Getter;
 public enum ItemCategory {
     // [렌탈 수요 Top]
     DIGITAL("디지털/가전"),       // 노트북, 태블릿, 모니터
+    LIVING("생활/주방"),         // 생활, 주방
     CAMERA("카메라/촬영장비"),     // DSLR, 삼각대, 조명, 액션캠 (★추가)
     CAMPING("캠핑/레저"),         // 텐트, 타프, 캠핑의자, 아이스박스 (★추가)
     TOOL("공구/산업용품"),        // 전동드릴, 사다리, 청소기 (★추가)
