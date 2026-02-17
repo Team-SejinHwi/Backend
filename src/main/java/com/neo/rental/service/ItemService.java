@@ -29,7 +29,7 @@ public class ItemService {
     private final ItemRepository itemRepository;
     private final MemberRepository memberRepository;
     private final ReviewRepository reviewRepository;
-    private final RentalRepository rentalRepository; // ✅ 렌탈 조회를 위해 주입
+    private final RentalRepository rentalRepository;
 
     // [1. 저장]
     public Long saveItem(ItemFormDto itemFormDto, String email) {
@@ -65,7 +65,7 @@ public class ItemService {
         return itemList.stream().map(ItemResponseDto::new).collect(Collectors.toList());
     }
 
-    // [3. 상세 조회 - 핵심 수정]
+    // [3. 상세 조회 - isRequested, isReviewed 로직 포함]
     @Transactional(readOnly = true)
     public ItemResponseDto getItemDetail(Long itemId, String userEmail) {
         ItemEntity item = itemRepository.findById(itemId)
@@ -73,28 +73,42 @@ public class ItemService {
 
         ItemResponseDto responseDto = new ItemResponseDto(item);
 
-        // A. 리뷰 및 평점 세팅
+        // A. 리뷰 목록 및 평점 세팅
         List<ReviewEntity> reviewEntities = reviewRepository.findByItem_IdOrderByCreatedAtDesc(itemId);
         List<ReviewResponseDto> reviewDtos = reviewEntities.stream().map(ReviewResponseDto::new).collect(Collectors.toList());
+
         double averageRating = 0.0;
         if (!reviewEntities.isEmpty()) {
             averageRating = reviewEntities.stream().mapToInt(ReviewEntity::getRating).average().orElse(0.0);
             averageRating = Math.round(averageRating * 10.0) / 10.0;
         }
+
         responseDto.setReviews(reviewDtos);
         responseDto.setAverageRating(averageRating);
         responseDto.setReviewCount(reviewEntities.size());
 
-        // B. 신청 여부 확인 (버튼 비활성화용)
-        if (userEmail != null) {
-            MemberEntity me = memberRepository.findByEmail(userEmail).orElse(null);
-            if (me != null) {
-                boolean exists = rentalRepository.existsByItem_IdAndRenter_IdAndStatusIn(
-                        itemId, me.getId(),
-                        List.of(RentalStatus.WAITING, RentalStatus.APPROVED, RentalStatus.RENTING)
-                );
-                responseDto.setRequested(exists);
-            }
+        // B. 유저 상태 확인 (신청 여부 & 리뷰 작성 여부)
+        if (userEmail != null && !userEmail.equals("anonymousUser")) {
+
+            // 1. isRequested (신청/진행중 여부) - 버튼 잠금용
+            List<RentalStatus> activeStatuses = List.of(
+                    RentalStatus.WAITING,
+                    RentalStatus.APPROVED,
+                    RentalStatus.PAID,
+                    RentalStatus.RENTING
+            );
+            boolean isRequested = rentalRepository.existsByItem_IdAndRenter_EmailAndStatusIn(
+                    itemId, userEmail, activeStatuses
+            );
+            responseDto.setRequested(isRequested);
+
+            // 👇 2. [추가] isReviewed (리뷰 작성 여부) - 버튼 표시용
+            boolean isReviewed = reviewRepository.existsByItem_IdAndReviewer_Email(itemId, userEmail);
+            responseDto.setReviewed(isReviewed);
+
+        } else {
+            responseDto.setRequested(false);
+            responseDto.setReviewed(false);
         }
 
         return responseDto;

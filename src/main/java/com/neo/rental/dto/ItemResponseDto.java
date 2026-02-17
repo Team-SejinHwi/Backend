@@ -1,5 +1,6 @@
 package com.neo.rental.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.neo.rental.constant.ItemCategory;
 import com.neo.rental.constant.ItemStatus;
 import com.neo.rental.entity.ItemEntity;
@@ -32,13 +33,18 @@ public class ItemResponseDto {
 
     private OwnerInfo owner;
 
-    // ✅ [리뷰 관련 필드]
+    // 리뷰 관련
     private List<ReviewResponseDto> reviews;
     private Double averageRating;
     private int reviewCount;
 
-    // ✅ [신청 상태 필드] (True면 버튼 비활성화)
+    // ✅ [신청 상태 필드] (True면 신청 버튼 비활성화)
+    @JsonProperty("isRequested")
     private boolean isRequested;
+
+    // 👇 [추가] [리뷰 작성 여부] (True면 리뷰 작성 버튼 숨김/비활성화)
+    @JsonProperty("isReviewed")
+    private boolean isReviewed;
 
     public ItemResponseDto(ItemEntity item) {
         this.itemId = item.getId();

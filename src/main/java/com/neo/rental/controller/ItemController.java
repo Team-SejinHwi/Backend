@@ -8,6 +8,8 @@ import com.neo.rental.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,7 +26,7 @@ public class ItemController {
     private final ItemService itemService;
     private final FileService fileService;
 
-    // 1. 상품 등록 (유지)
+    // 1. 상품 등록
     @PostMapping
     public ResponseEntity<?> createItem(
             @RequestPart(value = "itemData") ItemFormDto itemFormDto,
@@ -50,9 +52,7 @@ public class ItemController {
         }
     }
 
-    // 2. [수정됨] 상품 목록 조회 (Limit 적용 완료)
-    // 메인화면용(8개): GET /api/items?limit=8
-    // 검색용(기본 300개): GET /api/items?keyword=맥북
+    // 2. 상품 목록 조회
     @GetMapping
     public ResponseEntity<List<ItemResponseDto>> searchItems(
             @RequestParam(required = false) ItemCategory category,
@@ -60,24 +60,25 @@ public class ItemController {
             @RequestParam(required = false) Double lat,
             @RequestParam(required = false) Double lng,
             @RequestParam(required = false) Integer radius,
-            @RequestParam(required = false) Integer limit // 👈 [추가] 파라미터 수신
+            @RequestParam(required = false) Integer limit
     ) {
-        // Service 호출 (limit 값 전달)
         List<ItemResponseDto> items = itemService.searchItems(
                 category, keyword, lat, lng, radius, limit
         );
-
         return ResponseEntity.ok(items);
     }
 
-    // ✅ [3. 상세 조회 (수정됨)]
+    // 3. [상세 조회] - 로그인 유저 정보 전달
     @GetMapping("/{itemId}")
-    public ResponseEntity<ItemResponseDto> getItemDetail(@PathVariable Long itemId, Principal principal) {
+    public ResponseEntity<ItemResponseDto> getItemDetail(
+            @PathVariable Long itemId,
+            Principal principal // 로그인 안 했으면 null
+    ) {
         String email = (principal != null) ? principal.getName() : null;
         return ResponseEntity.ok(itemService.getItemDetail(itemId, email));
     }
 
-    // 4. 수정 (유지)
+    // 4. 수정
     @PutMapping("/{itemId}")
     public ResponseEntity<?> updateItem(@PathVariable Long itemId,
                                         @RequestPart(value = "itemData") ItemFormDto itemFormDto,
@@ -101,7 +102,7 @@ public class ItemController {
         }
     }
 
-    // 5. 삭제 (유지)
+    // 5. 삭제
     @DeleteMapping("/{itemId}")
     public ResponseEntity<?> deleteItem(@PathVariable Long itemId, Principal principal) {
         if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "로그인 필요"));
