@@ -20,6 +20,12 @@ public class PaymentController {
     @PostMapping("/confirm")
     public ResponseEntity<?> confirmPayment(@RequestBody PaymentDto dto) {
         // 서비스 호출 (Toss API 연동 + 상태 변경)
+
+        System.out.println("DEBUG: 들어온 데이터 확인 = " + dto);
+
+        if (dto.getRentalId() == null) {
+            return ResponseEntity.badRequest().body("rentalId가 누락되었습니다.");
+        }
         String tossResponse = paymentService.confirmPayment(
                 dto.getRentalId(),
                 dto.getPaymentKey(),

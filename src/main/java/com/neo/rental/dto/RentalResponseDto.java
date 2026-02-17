@@ -38,11 +38,7 @@ public class RentalResponseDto {
         this.endDate = rental.getEndDate();
         this.createdAt = rental.getCreatedAt();
 
-        // 총 가격 계산 로직
-        long days = ChronoUnit.DAYS.between(rental.getStartDate(), rental.getEndDate());
-        if (days <= 0) days = 1;
-        this.totalPrice = rental.getItem().getPrice() * (int) days;
-
+        this.totalPrice = rental.getTotalPrice();
         // 👇 [핵심 수정] 엔티티에 있는 거절 사유를 DTO에 담기
         this.rejectReason = rental.getRejectReason();
     }
