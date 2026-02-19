@@ -16,7 +16,7 @@ public interface ItemRepository extends JpaRepository<ItemEntity, Long> {
      * 상태 조건을 제거하여 모든 상품을 노출시킴.
      */
     @Query(value = "SELECT * FROM item_table i " +
-            "WHERE i.item_status IN ('AVAILABLE', 'RENTED','SOLD_OUT') " + // 👈 [핵심 수정] RENTED 상태도 조회 목록에 포함!
+            "WHERE i.item_status IN ('AVAILABLE', 'RENTED','SOLD_OUT') " + // [핵심 수정] RENTED 상태도 조회 목록에 포함
             "AND (:category IS NULL OR i.category = :category) " +
             "AND (:keyword IS NULL OR i.title LIKE CONCAT('%', :keyword, '%')) " +
             "AND (" +

@@ -68,15 +68,10 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // [변경]채팅 시스템 테스트를 위한 임시 조치
-        configuration.setAllowedOriginPatterns(List.of("*"));
-//        configuration.setAllowedOriginPatterns(List.of(
-//                "http://localhost:3000",
-//                "http://127.0.0.1:3000",
-//                "https://*.ngrok-free.app",
-//                "https://*.ngrok-free.dev",
-//                "https://*.ngrok.io"
-//        ));
+        configuration.setAllowedOriginPatterns(List.of("http://localhost:3000",
+                "http://localhost:5173",
+                "https://frontend-beige-eight-18.vercel.app"
+        ));  // 전달받은 Vercel 주소 추가
 
         configuration.setAllowedMethods(List.of("*"));
         configuration.setAllowedHeaders(List.of("*"));

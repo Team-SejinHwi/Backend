@@ -31,13 +31,12 @@ jwt:
   secret: ${JWT_SECRET}
 
 file:
-  upload-dir: /Users/oppenheimer/2026/rentalservice_sprint/rental-images/
+  upload-dir:${FILE_UPLOAD_DIR}
 
 logging:
   level:
     org.springframework.messaging: DEBUG
     org.springframework.web.socket: DEBUG
 
-# 👇 [수정] 환경변수 TOSS_SECRET_KEY 값을 가져오도록 변경
 toss:
   secret-key: ${TOSS_SECRET_KEY}
