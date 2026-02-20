@@ -9,7 +9,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     // (기존에 있던 로컬 이미지 폴더 연결 설정은 S3 도입으로 인해 삭제되었습니다)
 
-    // CORS 설정 
+    // CORS 설정
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**") // 모든 경로에 대해
