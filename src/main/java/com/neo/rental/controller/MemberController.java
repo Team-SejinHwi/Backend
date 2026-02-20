@@ -42,8 +42,10 @@ public class MemberController {
             TokenInfo tokenInfo = memberService.login(memberDTO.getEmail(), memberDTO.getPassword());
             return ResponseEntity.ok(tokenInfo);
         } catch (Exception e) {
+            // 콘솔에는 원래 에러를 찍어두어 개발자가 확인할 수 있게 합니다.
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인 실패: " + e.getMessage());
+            // 프론트엔드(사용자)에게는 친숙하고 부드러운 메시지를 보냅니다.
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("이메일 또는 비밀번호가 일치하지 않습니다. 다시 확인해 주세요!");
         }
     }
 
