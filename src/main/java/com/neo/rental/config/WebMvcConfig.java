@@ -1,26 +1,15 @@
 package com.neo.rental.config;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
 
-    @Value("${file.upload-dir}")
-    private String uploadDir;
+    // (기존에 있던 로컬 이미지 폴더 연결 설정은 S3 도입으로 인해 삭제되었습니다)
 
-    // 1. 정적 리소스(이미지) 핸들러 설정
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // /images/** 로 들어오는 요청은 실제 로컬 폴더(file://...)로 연결
-        registry.addResourceHandler("/images/**")
-                .addResourceLocations("file:" + uploadDir);
-    }
-
-    // 2. CORS 설정 (프론트엔드 연동 필수)
+    // CORS 설정 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**") // 모든 경로에 대해
