@@ -3,7 +3,7 @@ package com.neo.rental.controller;
 import com.neo.rental.constant.ItemCategory;
 import com.neo.rental.dto.ItemResponseDto;
 import com.neo.rental.dto.ItemFormDto;
-import com.neo.rental.service.FileService;
+import com.neo.rental.service.S3Service; // FileService 대신 S3Service 로 변경
 import com.neo.rental.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,7 +24,7 @@ import java.util.Map;
 public class ItemController {
 
     private final ItemService itemService;
-    private final FileService fileService;
+    private final S3Service s3Service; // s3 사용을 위해 교체
 
     // 1. 상품 등록
     @PostMapping
@@ -36,7 +36,8 @@ public class ItemController {
 
         try {
             String imageUrl = null;
-            if (itemImage != null && !itemImage.isEmpty()) imageUrl = fileService.uploadFile(itemImage);
+            // 로컬 폴더 대신 S3에 업로드하고 URL을 받아옵니다.
+            if (itemImage != null && !itemImage.isEmpty()) imageUrl = s3Service.uploadImage(itemImage);
             itemFormDto.setItemImageUrl(imageUrl);
 
             Long savedItemId = itemService.saveItem(itemFormDto, principal.getName());
@@ -88,7 +89,8 @@ public class ItemController {
 
         try {
             if (itemImage != null && !itemImage.isEmpty()) {
-                String imageUrl = fileService.uploadFile(itemImage);
+                // 수정할 때도 S3에 업로드
+                String imageUrl = s3Service.uploadImage(itemImage);
                 itemFormDto.setItemImageUrl(imageUrl);
             }
             itemService.updateItem(itemId, itemFormDto, principal.getName());
